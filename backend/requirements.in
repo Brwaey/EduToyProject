@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy>=2,<3
+alembic
+pydantic-settings
+pwdlib[argon2]
+python-multipart
+pytest
+httpx
+ruff
