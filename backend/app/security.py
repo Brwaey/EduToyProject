@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request, Response
 from pwdlib import PasswordHash
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .db import now
@@ -22,6 +23,8 @@ class Problem(Exception):
 
 def db_session(request: Request):
     with request.app.state.sessions() as session:
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            session.execute(text("BEGIN IMMEDIATE"))
         yield session
 
 

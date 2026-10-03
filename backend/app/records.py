@@ -4,7 +4,6 @@ import hashlib
 import json
 
 from sqlalchemy import select, update
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .db import now
@@ -132,22 +131,15 @@ def create_record(db: Session, owner: str, value: RecordCreate) -> Record:
         request_id=request_id,
         request_hash=digest,
     )
-    try:
-        db.add(record)
-        db.flush()
-        original = value.sources or [
-            SourceInput(content=value.body if value.body.strip() else value.title)
-        ]
-        for source in original:
-            add_source_row(db, record, source)
-        snapshot(db, record, "create")
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        existing = prior()
-        if existing is not None:
-            return existing
-        raise
+    db.add(record)
+    db.flush()
+    original = value.sources or [
+        SourceInput(content=value.body if value.body.strip() else value.title)
+    ]
+    for source in original:
+        add_source_row(db, record, source)
+    snapshot(db, record, "create")
+    db.flush()
     return record
 
 
@@ -183,7 +175,7 @@ def edit_record(db: Session, owner: str, record_id: str, value) -> Record:
         changes["title"] = title.strip() or body.strip().splitlines()[0][:80]
     advance(db, record, value.expected_version, changes)
     snapshot(db, record, "edit")
-    db.commit()
+    db.flush()
     return record
 
 
@@ -193,7 +185,7 @@ def set_deleted(db: Session, owner: str, record_id: str, expected: int, deleted:
         raise Problem(409, "state_conflict", "记录状态已变化，请刷新后重试")
     advance(db, record, expected, {"deleted_at": now() if deleted else None})
     snapshot(db, record, "delete" if deleted else "restore")
-    db.commit()
+    db.flush()
     return record
 
 
@@ -202,7 +194,7 @@ def append_source(db: Session, owner: str, record_id: str, value):
     advance(db, record, value.expected_version)
     add_source_row(db, record, SourceInput(**value.model_dump(exclude={"expected_version"})))
     snapshot(db, record, "source_add")
-    db.commit()
+    db.flush()
     return record
 
 
@@ -215,5 +207,5 @@ def revise_source(db: Session, owner: str, source_id: str, value):
         SourceVersion(source_id=source.id, version=source.current_version, content=checked.content)
     )
     snapshot(db, record, "source_revise")
-    db.commit()
+    db.flush()
     return record

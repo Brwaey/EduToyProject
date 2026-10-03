@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app import records
 from app.config import ROOT, Settings
+from app.db import migration_head
 from app.main import create_app
 from app.models import LoginSession, Record, RecordRevision, Source, SourceVersion, User
 from scripts.backup import backup
@@ -36,7 +37,7 @@ def project(client):
 
 
 def test_startup_health_and_foreign_keys(client, app):
-    assert client.get(P + "/health/ready").json()["schema"] == "0001_m1"
+    assert client.get(P + "/health/ready").json()["schema"] == migration_head()
     schema = client.get("/openapi.json").json()
     assert (
         schema["paths"][P + "/records"]["post"]["responses"]["422"]["content"]["application/json"][
@@ -428,9 +429,11 @@ def test_concurrent_version_update(auth, app):
             try:
                 from app.schemas import RecordPatch
 
-                return records.edit_record(
+                updated = records.edit_record(
                     db, owner, r["id"], RecordPatch(expected_version=1, title=title)
-                ).version
+                )
+                db.commit()
+                return updated.version
             except records.Problem as e:
                 return e.code
 

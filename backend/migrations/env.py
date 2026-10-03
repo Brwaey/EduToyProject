@@ -1,6 +1,6 @@
 from alembic import context
 
-from app import models  # noqa: F401
+from app import models, models_m2  # noqa: F401
 from app.db import Base
 
 

@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
@@ -51,3 +52,9 @@ def migrate(engine: Engine, settings: Settings) -> None:
 
 def make_session_factory(engine: Engine):
     return sessionmaker(engine, expire_on_commit=False)
+
+
+def migration_head() -> str:
+    config = Config(str(ROOT / "backend/alembic.ini"))
+    config.set_main_option("script_location", str(ROOT / "backend/migrations"))
+    return ScriptDirectory.from_config(config).get_current_head()
