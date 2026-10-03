@@ -2,7 +2,7 @@
 
 版本：M5-A · 2026-10-04 · 技术实现约定；功能与迁移集中验证待执行
 
-[项目入口](../README.md) · [产品说明](PROJECT_OVERVIEW.md) · [进度记录](DEVELOPMENT_PROGRESS.md) · [功能测试](FUNCTIONAL_TESTS.md)
+[项目入口](../README.md) · [功能指南](FEATURE_GUIDE.md) · [产品说明](PROJECT_OVERVIEW.md) · [进度记录](DEVELOPMENT_PROGRESS.md) · [功能测试](FUNCTIONAL_TESTS.md)
 
 本文档是跨模块技术约定的统一来源。产品含义见项目说明，实际验证结果见进度记录。每次接口、数据结构或事务行为变化都必须同步本文件。
 
