@@ -6,10 +6,15 @@ from pydantic import Field, field_validator, model_validator
 
 from .schemas import Input, VersionInput
 from .schemas_growth import ContributionInput, ContributionType
-from .schemas_m2 import RelationType
+from .schemas_m2 import ActionDetails, RelationType
 
 TaskKind = Literal[
-    "record_draft", "relation_suggestions", "contribution_candidates", "connection_test"
+    "record_draft",
+    "relation_suggestions",
+    "contribution_candidates",
+    "connection_test",
+    "action_candidates",
+    "reflection_draft",
 ]
 DraftField = Literal[
     "title",
@@ -97,14 +102,29 @@ class MaterialPick(Input):
 
 
 class Selection(Input):
-    kind: Literal["record", "research_item"]
+    kind: Literal["record", "research_item", "action", "reflection", "contribution", "growth_entry"]
     id: UUID
     version: int = Field(ge=1)
+    revision_id: UUID | None = None
+    current_version: int | None = Field(default=None, ge=1)
     materials: list[MaterialPick] = Field(min_length=1, max_length=30)
 
 
+class PlanningParameters(Input):
+    goal: str = Field(default="", max_length=4000)
+    constraints: str = Field(default="", max_length=4000)
+
+
 class PreviewInput(Input):
-    kind: Literal["record_draft", "relation_suggestions", "contribution_candidates"]
+    kind: Literal[
+        "record_draft",
+        "relation_suggestions",
+        "contribution_candidates",
+        "action_candidates",
+        "reflection_draft",
+    ]
+    parameters: PlanningParameters = Field(default_factory=PlanningParameters)
+    target_reflection_id: UUID | None = None
     objects: list[Selection] = Field(min_length=1, max_length=20)
 
 
@@ -192,12 +212,70 @@ class ContributionsOutput(Input):
     contributions: list[ContributionCandidate] = Field(max_length=10)
 
 
+ReflectionField = Literal["progress", "understanding", "blockers", "next_steps"]
+
+
+class ActionCandidate(Input):
+    title: str = Field(min_length=1, max_length=200)
+    research_goal: str = Field(min_length=1, max_length=20000)
+    learning_goal: str = Field(default="", max_length=20000)
+    completion_criteria: str = Field(min_length=1, max_length=20000)
+    effort: str = Field(default="", max_length=20000)
+    reason: str = Field(min_length=1, max_length=20000)
+    uncertainty: str = Field(default="", max_length=20000)
+    citations: list[Citation] = Field(min_length=1, max_length=20)
+
+    @field_validator("title", "research_goal", "completion_criteria", "reason")
+    @classmethod
+    def nonempty(cls, v):
+        if not v.strip():
+            raise ValueError("行动标题、目标、标准和理由不能为空")
+        return v
+
+
+class ActionsOutput(Input):
+    actions: list[ActionCandidate] = Field(max_length=5)
+
+
+class ReflectionOutput(Input):
+    fields: dict[ReflectionField, FieldSuggestion]
+    questions: list[str] = Field(default_factory=list, max_length=20)
+
+    @model_validator(mode="after")
+    def valid(self):
+        if not self.fields and not self.questions:
+            raise ValueError("请提供复盘草稿或待补充问题")
+        if any(f.value.strip() and not f.citations for f in self.fields.values()):
+            raise ValueError("非空复盘字段需要引用")
+        return self
+
+
+class ActionAcceptance(Input):
+    title: str = Field(min_length=1, max_length=200)
+    project_id: UUID | None = None
+    direction_id: UUID | None = None
+    origin_reflection_id: UUID | None = None
+    details: ActionDetails
+
+
+class ReflectionFieldAcceptance(Input):
+    mode: Literal["append", "replace"]
+    text: str = Field(max_length=20000)
+    final_text: str = Field(max_length=20000)
+
+
+class ReflectionAcceptance(VersionInput):
+    fields: dict[ReflectionField, ReflectionFieldAcceptance]
+
+
 class AcceptInput(VersionInput):
     current_versions: dict[str, int]
     reviewed: bool = False
     fields: dict[DraftField, str] | None = None
     relation: RelationCandidate | None = None
     contribution: ContributionInput | None = None
+    action: ActionAcceptance | None = None
+    reflection: ReflectionAcceptance | None = None
 
 
 class BatchReject(Input):
@@ -230,13 +308,17 @@ class AIObjectOut(Input):
     title: str
     version: int
     current_version: int
+    selected_current_version: int | None = None
     project_id: str | None
     deleted: bool
     archived: bool
     current: dict | None
+    revision_id: str | None = None
+    evidence_label: str | None = None
 
 
 class PreviewOut(Input):
+    parameters: dict = Field(default_factory=dict)
     objects: list[AIObjectOut]
     materials: list[AIMaterialOut]
     characters: int
@@ -256,6 +338,8 @@ class TaskOut(Input):
     error_code: str | None
     error_message: str | None
     usage: dict | None
+    parameters: dict = Field(default_factory=dict)
+    target_reflection_id: str | None = None
     inputs: PreviewOut
     needs_review: bool
     unavailable: bool
@@ -269,6 +353,7 @@ class SuggestionOut(Input):
     version: int
     status: str
     original: dict | None
+    planning: ActionCandidate | ReflectionOutput | None = None
     accepted: dict | None
     record_id: str | None
     record_revision_id: str | None
@@ -276,6 +361,10 @@ class SuggestionOut(Input):
     relation_revision_id: str | None
     contribution_id: str | None = None
     contribution_revision_id: str | None = None
+    action_id: str | None = None
+    action_revision_id: str | None = None
+    reflection_id: str | None = None
+    reflection_revision_id: str | None = None
     created_at: str
     decided_at: str | None
     events: list[dict]
@@ -291,6 +380,32 @@ class TaskPage(Input):
 
 class SuggestionPage(Input):
     items: list[SuggestionOut]
+    total: int
+    page: int
+    page_size: int
+
+
+class AIMaterialOption(Input):
+    label: str
+    text: str
+    pick: MaterialPick
+
+
+class AIMaterialDetail(Input):
+    kind: str
+    id: str
+    title: str
+    project_id: str | None
+    version: int
+    current_version: int
+    revision_id: str
+    evidence_label: str | None = None
+    options: list[AIMaterialOption]
+    related: list[dict] = Field(default_factory=list)
+
+
+class AIMaterialPage(Input):
+    items: list[dict]
     total: int
     page: int
     page_size: int

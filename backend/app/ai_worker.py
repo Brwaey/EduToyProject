@@ -178,7 +178,12 @@ class AIWorker:
                 inputs = inputs_view(db, task.owner_id, input_rows(db, task.id))
                 if any(o["deleted"] or o["archived"] for o in inputs["objects"]):
                     raise Problem(409, "ai_input_unavailable", "输入对象已删除或归档，请恢复后重试")
-                payload = (task.endpoint, task.model, key, messages(task.kind, inputs))
+                payload = (
+                    task.endpoint,
+                    task.model,
+                    key,
+                    messages(task.kind, inputs, task.parameters or {}),
+                )
                 task.status = "running"
                 task.started_at = now()
             except Problem as e:

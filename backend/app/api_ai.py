@@ -9,12 +9,12 @@ from . import ai_commands as commands
 from .ai_credentials import config_view, save_config
 from .ai_data import select_inputs, suggestion_view, task_view
 from .m2_common import owned
-from .models import Record
 from .models_ai import AISuggestion, AITask, AITaskInput
-from .models_m2 import ResearchItem
 from .schemas import VersionInput
 from .schemas_ai import (
     AcceptInput,
+    AIMaterialDetail,
+    AIMaterialPage,
     BatchReject,
     ConfigOut,
     ConfigSave,
@@ -81,17 +81,39 @@ def create_task(value: TaskCreate, request: Request, db: Db, who: Who):
 
 
 def project_condition(owner, project):
-    return (
-        select(AITaskInput.task_id)
-        .outerjoin(Record, AITaskInput.record_id == Record.id)
-        .outerjoin(ResearchItem, AITaskInput.item_id == ResearchItem.id)
-        .where(
-            or_(
-                (Record.owner_id == owner) & (Record.project_id == str(project)),
-                (ResearchItem.owner_id == owner) & (ResearchItem.project_id == str(project)),
-            )
-        )
-    )
+    from .ai_materials import KINDS, MODELS
+
+    # Every object type must participate in inbox project filtering.
+    stmt = select(AITaskInput.task_id)
+    terms = []
+    for kind, key in KINDS.items():
+        model = MODELS[kind]
+        stmt = stmt.outerjoin(model, getattr(AITaskInput, key + "_id") == model.id)
+        terms.append((model.owner_id == owner) & (model.project_id == str(project)))
+    return stmt.where(or_(*terms))
+
+
+@router.get("/materials", response_model=AIMaterialPage)
+def material_list(
+    db: Db,
+    who: Who,
+    task_kind: str,
+    kind: str | None = None,
+    q: str = "",
+    project_id: UUID | None = None,
+    page: Page = 1,
+    page_size: Size = 20,
+):
+    from .ai_materials import catalog
+
+    return catalog(db, who.user.id, task_kind, kind, q, project_id, page, page_size)
+
+
+@router.get("/materials/{kind}/{object_id}", response_model=AIMaterialDetail)
+def material_detail(kind: str, object_id: UUID, db: Db, who: Who, revision_id: UUID | None = None):
+    from .ai_materials import detail
+
+    return detail(db, who.user.id, kind, object_id, revision_id)
 
 
 @router.get("/tasks", response_model=TaskPage)

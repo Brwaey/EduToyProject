@@ -358,6 +358,7 @@ class ResultOut(BaseModel):
 
 
 class ActionOut(VersionedOut):
+    ai_adoptions: list[dict] = Field(default_factory=list)
     growth_origin: dict | None = None
     title: str
     project_id: str | None
@@ -386,6 +387,7 @@ class MaterialOut(BaseModel):
 
 
 class ReflectionOut(VersionedOut):
+    ai_adoptions: list[dict] = Field(default_factory=list)
     title: str
     project_id: str | None
     kind: Literal["attempt", "period"]

@@ -357,7 +357,18 @@ def history(db, owner, model, object_id):
         .where(getattr(Revision, REV_KEYS[model]) == obj.id)
         .order_by(Revision.version.desc())
     )
-    return [{**columns(r), "snapshot": redact_snapshot(db, owner, r.snapshot)} for r in rows]
+    from .ai_planning import adoptions_for
+
+    return [
+        {
+            **columns(r),
+            "snapshot": {
+                **redact_snapshot(db, owner, r.snapshot),
+                "ai_adoptions": adoptions_for(db, owner, revision_id=r.id),
+            },
+        }
+        for r in rows
+    ]
 
 
 def record_context(db, owner, record_id):

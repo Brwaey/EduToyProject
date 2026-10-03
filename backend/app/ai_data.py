@@ -4,10 +4,10 @@ import json
 
 from sqlalchemy import select
 
-from .m2_common import evidence_content, owned, writable
-from .models import Project, Record, RecordRevision, Source, SourceVersion
+from .ai_materials import content as material_content
+from .ai_materials import projection as inputs_view
+from .ai_materials import selection_rows
 from .models_ai import AISuggestion, AISuggestionEvent, AITaskInput
-from .models_m2 import ResearchItem, Revision
 from .schemas_ai import ContributionsOutput, DraftOutput, RelationsOutput
 from .security import Problem
 
@@ -24,166 +24,14 @@ def input_rows(db, task_id):
     )
 
 
-def material_content(db, row):
-    if row.record_id:
-        rev = db.get(RecordRevision, row.record_revision_id)
-        content = evidence_content(db, rev, row.source_version_id, row.field_path)
-    else:
-        rev = db.get(Revision, row.item_revision_id)
-        if row.field_path in ("title", "description"):
-            content = rev.snapshot.get(row.field_path, "")
-        elif row.field_path.startswith("details."):
-            content = rev.snapshot.get("details", {}).get(row.field_path[8:], "")
-        else:
-            raise Problem(422, "invalid_material", "研究内容字段无效")
-    if not isinstance(content, str):
-        raise Problem(422, "invalid_material", "仅支持文本字段")
-    if row.start is not None:
-        if row.end > len(content):
-            raise Problem(422, "invalid_material", "片段超出原文范围")
-        content = content[row.start : row.end]
-    return content
-
-
 def select_inputs(db, owner, value):
-    if value.kind == "record_draft" and (
-        len(value.objects) != 1 or value.objects[0].kind != "record"
-    ):
-        raise Problem(422, "invalid_selection", "整理时请选择一条记录")
-    if value.kind == "relation_suggestions" and (
-        len(value.objects) < 2 or not any(o.kind == "record" for o in value.objects)
-    ):
-        raise Problem(422, "invalid_selection", "请选择至少两个对象，其中包含一条科研记录")
-    if value.kind == "contribution_candidates" and any(o.kind != "record" for o in value.objects):
-        raise Problem(422, "invalid_selection", "贡献候选只分析科研记录及其原始材料")
-    seen, rows = set(), []
-    for index, selection in enumerate(value.objects):
-        identity = (selection.kind, str(selection.id))
-        if identity in seen:
-            raise Problem(422, "duplicate_selection", "不能重复选择对象")
-        seen.add(identity)
-        model = Record if selection.kind == "record" else ResearchItem
-        obj = owned(db, model, owner, selection.id)
-        writable(db, obj)
-        if obj.version != selection.version:
-            raise Problem(409, "version_conflict", "所选材料已更新，请重新预览")
-        rev = (
-            db.scalar(
-                select(RecordRevision).where(
-                    RecordRevision.record_id == obj.id, RecordRevision.version == obj.version
-                )
-            )
-            if model is Record
-            else db.scalar(
-                select(Revision).where(Revision.item_id == obj.id, Revision.version == obj.version)
-            )
-        )
-        picks = set()
-        for pick in selection.materials:
-            fingerprint = (pick.field_path, str(pick.source_version_id), pick.start, pick.end)
-            if fingerprint in picks:
-                raise Problem(422, "duplicate_selection", "不能重复选择材料")
-            picks.add(fingerprint)
-            if model is ResearchItem and (
-                pick.source_version_id
-                or pick.field_path
-                not in {
-                    "title",
-                    "description",
-                    *[
-                        "details." + k
-                        for k, v in obj.details.items()
-                        if isinstance(v, str) and k != "kind"
-                    ],
-                }
-            ):
-                raise Problem(422, "invalid_material", "研究内容字段无效")
-            row = AITaskInput(
-                object_key=f"o{index + 1}",
-                material_key=f"m{len(rows) + 1:03d}",
-                record_id=obj.id if model is Record else None,
-                record_revision_id=rev.id if model is Record else None,
-                item_id=obj.id if model is ResearchItem else None,
-                item_revision_id=rev.id if model is ResearchItem else None,
-                source_version_id=str(pick.source_version_id) if pick.source_version_id else None,
-                field_path=pick.field_path,
-                start=pick.start,
-                end=pick.end,
-            )
-            if not material_content(db, row).strip():
-                raise Problem(422, "empty_material", "请选择有内容的材料")
-            rows.append(row)
+    rows = selection_rows(db, owner, value)
     projection = inputs_view(db, owner, rows)
+    projection["parameters"] = value.parameters.model_dump()
+    projection["characters"] += len(value.parameters.goal) + len(value.parameters.constraints)
     if projection["characters"] > 32000:
-        raise Problem(413, "ai_input_too_large", "材料超过 32,000 字符，请缩小选择范围")
+        raise Problem(413, "ai_input_too_large", "材料与目标限制超过32,000字符，请缩小范围")
     return rows, projection
-
-
-def inputs_view(db, owner, rows):
-    objects, materials = {}, []
-    for row in rows:
-        obj = owned(
-            db, Record if row.record_id else ResearchItem, owner, row.record_id or row.item_id, True
-        )
-        deleted = bool(obj.deleted_at)
-        rev = (
-            db.get(RecordRevision, row.record_revision_id)
-            if row.record_id
-            else db.get(Revision, row.item_revision_id)
-        )
-        project = db.get(Project, obj.project_id) if obj.project_id else None
-        objects[row.object_key] = dict(
-            key=row.object_key,
-            kind="record" if row.record_id else "research_item",
-            id=obj.id,
-            title="来源已删除" if deleted else rev.snapshot["title"],
-            version=rev.version,
-            current_version=obj.version,
-            project_id=obj.project_id,
-            deleted=deleted,
-            archived=bool(project and project.archived),
-            current=None
-            if deleted
-            else (
-                {"title": obj.title, "record_type": obj.record_type, "fields": obj.fields}
-                if row.record_id
-                else {"title": obj.title, "description": obj.description, "details": obj.details}
-            ),
-        )
-        current_text = None
-        if not deleted:
-            if row.source_version_id:
-                source_version = db.get(SourceVersion, row.source_version_id)
-                source = db.get(Source, source_version.source_id)
-                latest = db.scalar(
-                    select(SourceVersion).where(
-                        SourceVersion.source_id == source.id,
-                        SourceVersion.version == source.current_version,
-                    )
-                )
-                current_text = latest.content
-            elif row.field_path.startswith("fields."):
-                current_text = obj.fields.get(row.field_path[7:], "")
-            elif row.field_path.startswith("details."):
-                current_text = obj.details.get(row.field_path[8:], "")
-            else:
-                current_text = getattr(obj, row.field_path, "")
-        materials.append(
-            dict(
-                key=row.material_key,
-                object_key=row.object_key,
-                field_path=row.field_path,
-                source_version_id=row.source_version_id,
-                text=None if deleted else material_content(db, row),
-                current_text=current_text,
-                unavailable=deleted,
-            )
-        )
-    return dict(
-        objects=list(objects.values()),
-        materials=materials,
-        characters=sum(len(m["text"] or "") for m in materials),
-    )
 
 
 def task_view(db, task):
@@ -206,9 +54,15 @@ def task_view(db, task):
             "usage",
         )
     }
+    inputs["parameters"] = task.parameters or {}
+    inputs["characters"] += sum(len(v) for v in inputs["parameters"].values() if isinstance(v, str))
     result.update(
+        parameters=task.parameters or {},
+        target_reflection_id=task.target_reflection_id,
         inputs=inputs,
-        needs_review=any(o["version"] != o["current_version"] for o in inputs["objects"]),
+        needs_review=any(
+            o["selected_current_version"] != o["current_version"] for o in inputs["objects"]
+        ),
         unavailable=any(o["deleted"] for o in inputs["objects"]),
         suggestion_ids=list(
             db.scalars(
@@ -238,6 +92,10 @@ def suggestion_view(db, suggestion, task):
             "relation_revision_id",
             "contribution_id",
             "contribution_revision_id",
+            "action_id",
+            "action_revision_id",
+            "reflection_id",
+            "reflection_revision_id",
             "created_at",
             "decided_at",
         )
@@ -259,6 +117,13 @@ def suggestion_view(db, suggestion, task):
             )
         ],
     )
+    if not redacted and suggestion.kind in ("action_candidates", "reflection_draft"):
+        from .schemas_ai import ActionCandidate, ReflectionOutput
+
+        schema = ActionCandidate if suggestion.kind == "action_candidates" else ReflectionOutput
+        result["planning"] = {
+            k: v for k, v in suggestion.original.items() if k in schema.model_fields
+        }
     return result
 
 
@@ -316,6 +181,10 @@ def validate_output(db, task, text):
     if text.startswith("```json\n") and text.endswith("```"):
         text = text[8:-3].strip()
     raw = json.loads(text)
+    if task.kind in ("action_candidates", "reflection_draft"):
+        from .ai_planning import validate_output as validate_planning
+
+        return validate_planning(db, task, rows, raw)
     if task.kind == "record_draft":
         value = DraftOutput.model_validate(raw)
         evidence = {

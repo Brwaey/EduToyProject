@@ -13,16 +13,22 @@ CONTRIBUTIONS = """提取最多10条个人贡献候选，依据不足返回 {"co
 
 
 def prompt_version(kind):
-    return "m4.contributions.v1" if kind == "contribution_candidates" else PROMPT_VERSION
+    return {
+        "contribution_candidates": "m4.contributions.v1",
+        "action_candidates": "m5.actions.v1",
+        "reflection_draft": "m5.reflection.v1",
+    }.get(kind, PROMPT_VERSION)
 
 
-def messages(kind, inputs):
+def messages(kind, inputs, parameters=None):
     if kind == "connection_test":
         return [{"role": "user", "content": "请回复：连接成功"}]
     prompt = {
         "record_draft": DRAFT,
         "relation_suggestions": RELATIONS,
         "contribution_candidates": CONTRIBUTIONS,
+        "action_candidates": ACTIONS,
+        "reflection_draft": REFLECTION,
     }.get(kind)
     if prompt is None:
         raise Problem(422, "ai_task_kind", "不支持的 AI 任务类型")
@@ -30,6 +36,7 @@ def messages(kind, inputs):
         {
             "key": o["key"],
             "kind": o["kind"],
+            **({"evidence_label": o["evidence_label"]} if o.get("evidence_label") else {}),
             "item_kind": (o.get("current") or {}).get("details", {}).get("kind"),
         }
         for o in inputs["objects"]
@@ -41,6 +48,17 @@ def messages(kind, inputs):
         {"role": "system", "content": BASE + prompt},
         {
             "role": "user",
-            "content": json.dumps({"objects": objects, "materials": materials}, ensure_ascii=False),
+            "content": json.dumps(
+                {
+                    "objects": objects,
+                    "materials": materials,
+                    **({"user_request": parameters} if parameters else {}),
+                },
+                ensure_ascii=False,
+            ),
         },
     ]
+
+
+ACTIONS = """根据用户目标和约束提出未来行动建议，不宣称行动已发生。最多5条，依据不足返回 {"actions":[]}。输出 {"actions":[{"title":"验证一个解释","research_goal":"要澄清什么","learning_goal":"可选学习目标","completion_criteria":"建议做法及完成标准","effort":"建议或估计的资源投入，未知留空","reason":"结合选定材料说明理由","uncertainty":"待确认前提","citations":[{"material":"m001","quote":"完整复制的原文片段","occurrence":1}]}]}。title最多200字符，其余字段最多20000。理由和任何既有事实须有原文依据。不得声称用户已成长或研究已成功；用户自述仍是自述。不要提供状态、项目、日期、评分、新方向或结果记录。"""
+REFLECTION = """辅助整理已保存的周期复盘，保留用户自己的判断。输出 {"fields":{"progress":{"value":"本周实际推进","citations":[{"material":"m001","quote":"原文片段","occurrence":1}]}},"questions":["仍需补充的问题"]}。fields只允许progress/understanding/blockers/next_steps；每个非空字段必须引用原文。认识变化仅整理用户明确表达，未表达留空；不能根据完成数量编造研究价值、能力进步或本人贡献。下一步只作为建议文字，不能称为已执行。缺少信息留空或列问题，不改标题、日期、项目或关联材料。"""

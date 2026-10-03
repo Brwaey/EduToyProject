@@ -24,7 +24,11 @@ class Problem(Exception):
 def db_session(request: Request):
     with request.app.state.sessions() as session:
         if request.method not in ("GET", "HEAD", "OPTIONS"):
-            session.execute(text("BEGIN IMMEDIATE"))
+            read_export = request.url.path in (
+                "/api/v1/exports/preview",
+                "/api/v1/exports/download",
+            )
+            session.execute(text("BEGIN" if read_export else "BEGIN IMMEDIATE"))
         yield session
 
 

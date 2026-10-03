@@ -400,6 +400,10 @@ def object_view(db, obj):
             result_view(db, owner, r)
             for r in db.scalars(select(ActionRecord).where(ActionRecord.action_id == obj.id))
         ]
+    if isinstance(obj, (Action, Reflection)):
+        from .ai_planning import adoptions_for
+
+        value["ai_adoptions"] = adoptions_for(db, owner, obj=obj)
     if isinstance(obj, Reflection):
         value["materials"] = [material_view(db, owner, r) for r in obj.materials]
     return value

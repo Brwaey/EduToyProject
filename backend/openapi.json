@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "研迹 API",
-    "version": "0.4.0"
+    "version": "0.5.0"
   },
   "paths": {
     "/api/v1/health/live": {
@@ -9814,6 +9814,363 @@
         }
       }
     },
+    "/api/v1/ai/materials": {
+      "get": {
+        "tags": [
+          "M3 AI"
+        ],
+        "summary": "Material List",
+        "operationId": "material_list_api_v1_ai_materials_get",
+        "parameters": [
+          {
+            "name": "task_kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Kind"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIMaterialPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/ai/materials/{kind}/{object_id}": {
+      "get": {
+        "tags": [
+          "M3 AI"
+        ],
+        "summary": "Material Detail",
+        "operationId": "material_detail_api_v1_ai_materials__kind___object_id__get",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "object_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Object Id"
+            }
+          },
+          {
+            "name": "revision_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Revision Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIMaterialDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
     "/api/v1/ai/tasks/{task_id}": {
       "get": {
         "tags": [
@@ -14952,10 +15309,556 @@
           }
         }
       }
+    },
+    "/api/v1/exports/candidates": {
+      "get": {
+        "tags": [
+          "M5 business export"
+        ],
+        "summary": "Candidates",
+        "operationId": "candidates_api_v1_exports_candidates_get",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "record",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Archived"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportCandidates"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/exports/preview": {
+      "post": {
+        "tags": [
+          "M5 business export"
+        ],
+        "summary": "Preview",
+        "operationId": "preview_api_v1_exports_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportSelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request Entity Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exports/download": {
+      "post": {
+        "tags": [
+          "M5 business export"
+        ],
+        "summary": "Download",
+        "operationId": "download_api_v1_exports_download_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportDownload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "预览对应的业务文件",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request Entity Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AIMaterialDetail": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "current_version": {
+            "type": "integer",
+            "title": "Current Version"
+          },
+          "revision_id": {
+            "type": "string",
+            "title": "Revision Id"
+          },
+          "evidence_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Label"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/AIMaterialOption"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "related": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Related"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "id",
+          "title",
+          "project_id",
+          "version",
+          "current_version",
+          "revision_id",
+          "options"
+        ],
+        "title": "AIMaterialDetail"
+      },
+      "AIMaterialOption": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "pick": {
+            "$ref": "#/components/schemas/MaterialPick"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "text",
+          "pick"
+        ],
+        "title": "AIMaterialOption"
+      },
       "AIMaterialOut": {
         "properties": {
           "key": {
@@ -15021,6 +15924,39 @@
         ],
         "title": "AIMaterialOut"
       },
+      "AIMaterialPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "AIMaterialPage"
+      },
       "AIObjectOut": {
         "properties": {
           "key": {
@@ -15046,6 +15982,17 @@
           "current_version": {
             "type": "integer",
             "title": "Current Version"
+          },
+          "selected_current_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Current Version"
           },
           "project_id": {
             "anyOf": [
@@ -15077,6 +16024,28 @@
               }
             ],
             "title": "Current"
+          },
+          "revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision Id"
+          },
+          "evidence_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Label"
           }
         },
         "additionalProperties": false,
@@ -15284,6 +16253,26 @@
                 "type": "null"
               }
             ]
+          },
+          "action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActionAcceptance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reflection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReflectionAcceptance"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -15293,6 +16282,127 @@
           "current_versions"
         ],
         "title": "AcceptInput"
+      },
+      "ActionAcceptance": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "direction_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction Id"
+          },
+          "origin_reflection_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Reflection Id"
+          },
+          "details": {
+            "$ref": "#/components/schemas/ActionDetails"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "details"
+        ],
+        "title": "ActionAcceptance"
+      },
+      "ActionCandidate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "research_goal": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Research Goal"
+          },
+          "learning_goal": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Learning Goal",
+            "default": ""
+          },
+          "completion_criteria": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Completion Criteria"
+          },
+          "effort": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Effort",
+            "default": ""
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "uncertainty": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Uncertainty",
+            "default": ""
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Citations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "research_goal",
+          "completion_criteria",
+          "reason",
+          "citations"
+        ],
+        "title": "ActionCandidate"
       },
       "ActionCreate": {
         "properties": {
@@ -15546,6 +16656,14 @@
             "type": "boolean",
             "title": "Archived",
             "default": false
+          },
+          "ai_adoptions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Ai Adoptions"
           },
           "growth_origin": {
             "anyOf": [
@@ -16563,6 +17681,312 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ExplorationFields"
+      },
+      "ExportCandidates": {
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "ExportCandidates"
+      },
+      "ExportDownload": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ],
+            "title": "Format",
+            "default": "json"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "projects",
+              "unassigned",
+              "selected"
+            ],
+            "title": "Scope",
+            "default": "all"
+          },
+          "project_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Project Ids"
+          },
+          "objects": {
+            "items": {
+              "$ref": "#/components/schemas/ExportRef"
+            },
+            "type": "array",
+            "maxItems": 5000,
+            "title": "Objects"
+          },
+          "types": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "project",
+                "record",
+                "research_item",
+                "relation",
+                "action",
+                "reflection",
+                "contribution",
+                "growth_entry",
+                "ability_tag"
+              ]
+            },
+            "type": "array",
+            "title": "Types"
+          },
+          "include_archived": {
+            "type": "boolean",
+            "title": "Include Archived",
+            "default": false
+          },
+          "fingerprint": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[a-f0-9]+$",
+            "title": "Fingerprint"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fingerprint"
+        ],
+        "title": "ExportDownload"
+      },
+      "ExportPreview": {
+        "properties": {
+          "fingerprint": {
+            "type": "string",
+            "title": "Fingerprint"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts"
+          },
+          "fixed_versions": {
+            "type": "integer",
+            "title": "Fixed Versions"
+          },
+          "entries": {
+            "type": "integer",
+            "title": "Entries"
+          },
+          "bytes": {
+            "type": "integer",
+            "title": "Bytes"
+          },
+          "cross_project_evidence": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Cross Project Evidence"
+          },
+          "archived_content": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Archived Content"
+          },
+          "unavailable": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Unavailable"
+          },
+          "selection": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selection"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fingerprint",
+          "counts",
+          "fixed_versions",
+          "entries",
+          "bytes",
+          "cross_project_evidence",
+          "archived_content",
+          "unavailable",
+          "selection",
+          "filename"
+        ],
+        "title": "ExportPreview"
+      },
+      "ExportRef": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "project",
+              "record",
+              "research_item",
+              "relation",
+              "action",
+              "reflection",
+              "contribution",
+              "growth_entry",
+              "ability_tag"
+            ],
+            "title": "Kind"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "id"
+        ],
+        "title": "ExportRef"
+      },
+      "ExportSelection": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "markdown"
+            ],
+            "title": "Format",
+            "default": "json"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "projects",
+              "unassigned",
+              "selected"
+            ],
+            "title": "Scope",
+            "default": "all"
+          },
+          "project_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Project Ids"
+          },
+          "objects": {
+            "items": {
+              "$ref": "#/components/schemas/ExportRef"
+            },
+            "type": "array",
+            "maxItems": 5000,
+            "title": "Objects"
+          },
+          "types": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "project",
+                "record",
+                "research_item",
+                "relation",
+                "action",
+                "reflection",
+                "contribution",
+                "growth_entry",
+                "ability_tag"
+              ]
+            },
+            "type": "array",
+            "title": "Types"
+          },
+          "include_archived": {
+            "type": "boolean",
+            "title": "Include Archived",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ExportSelection"
+      },
+      "FieldSuggestion": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Value"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Citations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "FieldSuggestion"
       },
       "FindingDetails": {
         "properties": {
@@ -18374,6 +19798,25 @@
         ],
         "title": "Page[RelationOut]"
       },
+      "PlanningParameters": {
+        "properties": {
+          "goal": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Goal",
+            "default": ""
+          },
+          "constraints": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Constraints",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PlanningParameters"
+      },
       "Position": {
         "properties": {
           "x": {
@@ -18404,9 +19847,26 @@
             "enum": [
               "record_draft",
               "relation_suggestions",
-              "contribution_candidates"
+              "contribution_candidates",
+              "action_candidates",
+              "reflection_draft"
             ],
             "title": "Kind"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/PlanningParameters"
+          },
+          "target_reflection_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Reflection Id"
           },
           "objects": {
             "items": {
@@ -18428,6 +19888,11 @@
       },
       "PreviewOut": {
         "properties": {
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters"
+          },
           "objects": {
             "items": {
               "$ref": "#/components/schemas/AIObjectOut"
@@ -18924,6 +20389,37 @@
         ],
         "title": "RecordPatch"
       },
+      "ReflectionAcceptance": {
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          },
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ReflectionFieldAcceptance"
+            },
+            "propertyNames": {
+              "enum": [
+                "progress",
+                "understanding",
+                "blockers",
+                "next_steps"
+              ]
+            },
+            "type": "object",
+            "title": "Fields"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_version",
+          "fields"
+        ],
+        "title": "ReflectionAcceptance"
+      },
       "ReflectionCreate": {
         "properties": {
           "kind": {
@@ -19182,6 +20678,36 @@
         ],
         "title": "ReflectionEdit"
       },
+      "ReflectionFieldAcceptance": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "append",
+              "replace"
+            ],
+            "title": "Mode"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Text"
+          },
+          "final_text": {
+            "type": "string",
+            "maxLength": 20000,
+            "title": "Final Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode",
+          "text",
+          "final_text"
+        ],
+        "title": "ReflectionFieldAcceptance"
+      },
       "ReflectionOut": {
         "properties": {
           "id": {
@@ -19215,6 +20741,14 @@
             "type": "boolean",
             "title": "Archived",
             "default": false
+          },
+          "ai_adoptions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Ai Adoptions"
           },
           "title": {
             "type": "string",
@@ -19293,6 +20827,39 @@
           "materials"
         ],
         "title": "ReflectionOut"
+      },
+      "ReflectionOutput": {
+        "properties": {
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldSuggestion"
+            },
+            "propertyNames": {
+              "enum": [
+                "progress",
+                "understanding",
+                "blockers",
+                "next_steps"
+              ]
+            },
+            "type": "object",
+            "title": "Fields"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Questions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fields"
+        ],
+        "title": "ReflectionOutput"
       },
       "RegisterInput": {
         "properties": {
@@ -19783,7 +21350,11 @@
             "type": "string",
             "enum": [
               "record",
-              "research_item"
+              "research_item",
+              "action",
+              "reflection",
+              "contribution",
+              "growth_entry"
             ],
             "title": "Kind"
           },
@@ -19796,6 +21367,30 @@
             "type": "integer",
             "minimum": 1.0,
             "title": "Version"
+          },
+          "revision_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision Id"
+          },
+          "current_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Version"
           },
           "materials": {
             "items": {
@@ -20024,6 +21619,20 @@
             ],
             "title": "Original"
           },
+          "planning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActionCandidate"
+              },
+              {
+                "$ref": "#/components/schemas/ReflectionOutput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planning"
+          },
           "accepted": {
             "anyOf": [
               {
@@ -20101,6 +21710,50 @@
               }
             ],
             "title": "Contribution Revision Id"
+          },
+          "action_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Id"
+          },
+          "action_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Revision Id"
+          },
+          "reflection_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reflection Id"
+          },
+          "reflection_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reflection Revision Id"
           },
           "created_at": {
             "type": "string",
@@ -20255,9 +21908,26 @@
             "enum": [
               "record_draft",
               "relation_suggestions",
-              "contribution_candidates"
+              "contribution_candidates",
+              "action_candidates",
+              "reflection_draft"
             ],
             "title": "Kind"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/PlanningParameters"
+          },
+          "target_reflection_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Reflection Id"
           },
           "objects": {
             "items": {
@@ -20301,7 +21971,9 @@
               "record_draft",
               "relation_suggestions",
               "contribution_candidates",
-              "connection_test"
+              "connection_test",
+              "action_candidates",
+              "reflection_draft"
             ],
             "title": "Kind"
           },
@@ -20391,6 +22063,22 @@
               }
             ],
             "title": "Usage"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters"
+          },
+          "target_reflection_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Reflection Id"
           },
           "inputs": {
             "$ref": "#/components/schemas/PreviewOut"

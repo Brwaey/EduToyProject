@@ -26,6 +26,15 @@ def create_task(db, settings, owner, value, kind=None, parent=None):
         "kind": kind,
         "parent": parent.id if parent else None,
     }
+    # Preserve pre-M5 request hashes for legacy idempotency receipts.
+    if not payload.get("target_reflection_id"):
+        payload.pop("target_reflection_id", None)
+    if not any(payload.get("parameters", {}).values()):
+        payload.pop("parameters", None)
+    for selection in payload.get("objects", []):
+        for key in ("revision_id", "current_version"):
+            if selection.get(key) is None:
+                selection.pop(key, None)
     digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     prior = db.scalar(
         select(AITask).where(AITask.owner_id == owner, AITask.request_id == str(value.request_id))
@@ -61,8 +70,17 @@ def create_task(db, settings, owner, value, kind=None, parent=None):
                             "material_key",
                             "record_id",
                             "record_revision_id",
+                            "selected_current_version",
                             "item_id",
                             "item_revision_id",
+                            "action_id",
+                            "action_revision_id",
+                            "reflection_id",
+                            "reflection_revision_id",
+                            "contribution_id",
+                            "contribution_revision_id",
+                            "entry_id",
+                            "entry_revision_id",
                             "source_version_id",
                             "field_path",
                             "start",
@@ -88,6 +106,14 @@ def create_task(db, settings, owner, value, kind=None, parent=None):
         endpoint=config.endpoint,
         model=config.model,
         parent_id=parent.id if parent else None,
+        parameters=parent.parameters
+        if parent
+        else (value.parameters.model_dump() if hasattr(value, "parameters") else {}),
+        target_reflection_id=parent.target_reflection_id
+        if parent
+        else str(value.target_reflection_id)
+        if getattr(value, "target_reflection_id", None)
+        else None,
         target_record_id=rows[0].record_id if kind == "record_draft" else None,
     )
     db.add(task)
@@ -150,9 +176,23 @@ def accept(db, owner, suggestion, value):
     actual = {o["key"]: o["current_version"] for o in view["objects"]}
     if actual != value.current_versions:
         raise Problem(409, "version_conflict", "材料再次变化，请重新载入并核对，当前输入已保留")
-    stale = any(o["version"] != o["current_version"] for o in view["objects"])
+    stale = any(o["selected_current_version"] != o["current_version"] for o in view["objects"])
     if stale and not value.reviewed:
         raise Problem(409, "ai_review_required", "材料已更新，请核对旧依据仍适用后确认")
+    provided = [
+        k
+        for k in ("fields", "relation", "contribution", "action", "reflection")
+        if getattr(value, k) is not None
+    ]
+    expected = {
+        "record_draft": "fields",
+        "relation_suggestions": "relation",
+        "contribution_candidates": "contribution",
+        "action_candidates": "action",
+        "reflection_draft": "reflection",
+    }.get(suggestion.kind)
+    if provided != [expected]:
+        raise Problem(422, "invalid_acceptance", "采纳内容与建议类型不匹配")
     modified = False
     if suggestion.kind == "record_draft":
         if not value.fields or value.relation or value.contribution:
@@ -268,6 +308,10 @@ def accept(db, owner, suggestion, value):
         suggestion.contribution_id = contribution.id
         suggestion.contribution_revision_id = latest_revision(db, contribution).id
         suggestion.accepted = {**payload, "user_supplement_fields": supplemented}
+    elif suggestion.kind in ("action_candidates", "reflection_draft"):
+        from .ai_planning import accept_planning
+
+        modified = accept_planning(db, owner, suggestion, task, rows, view, value)
     else:
         raise Problem(422, "ai_task_kind", "不支持的 AI 建议类型")
     if stale:
@@ -289,6 +333,8 @@ def accept(db, owner, suggestion, value):
                 "record_id": suggestion.record_id,
                 "relation_id": suggestion.relation_id,
                 "contribution_id": suggestion.contribution_id,
+                "action_id": suggestion.action_id,
+                "reflection_id": suggestion.reflection_id,
             },
         )
     )
