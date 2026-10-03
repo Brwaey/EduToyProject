@@ -36,12 +36,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app):
         migrate(engine, settings)
-        yield
-        engine.dispose()
+        from .ai_worker import AIWorker
+
+        worker = AIWorker(app)
+        app.state.ai_worker = worker
+        if settings.ai_worker_enabled:
+            await worker.start()
+        try:
+            yield
+        finally:
+            if settings.ai_worker_enabled:
+                await worker.stop()
+            engine.dispose()
 
     app = FastAPI(
         title="研迹 API",
-        version="0.2.0",
+        version="0.3.0",
         lifespan=lifespan,
         responses={
             status: {"model": ErrorOut}
@@ -146,4 +156,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(m1_router)
     app.include_router(m2_router)
+    from .api_ai import router as ai_router
+
+    app.include_router(ai_router)
     return app

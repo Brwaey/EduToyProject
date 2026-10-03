@@ -9,7 +9,9 @@ ORIGIN = "http://127.0.0.1:5173"
 
 @pytest.fixture
 def app(tmp_path):
-    return create_app(Settings(db_path=str(tmp_path / "test.sqlite3")))
+    return create_app(
+        Settings(db_path=str(tmp_path / "test.sqlite3"), ai_key_path=str(tmp_path / "test.key"))
+    )
 
 
 @pytest.fixture
