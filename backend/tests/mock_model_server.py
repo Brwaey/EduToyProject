@@ -57,6 +57,22 @@ class Handler(BaseHTTPRequestHandler):
                     },
                     "questions": ["后续准备如何复核？"],
                 }
+            elif "个人贡献候选" in payload["messages"][0]["content"]:
+                content = {
+                    "contributions": []
+                    if model == "empty-contributions"
+                    else [
+                        {
+                            "contribution_type": "validation",
+                            "fields": {
+                                "title": {"value": "补充了对照条件", "citations": [cite]},
+                                "personal_role": {"value": "", "citations": []},
+                            },
+                            "uncertainty": "本人参与由用户核对",
+                            "questions": ["具体核对了什么？"],
+                        }
+                    ]
+                }
             else:
                 content = {
                     "relations": []

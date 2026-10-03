@@ -15,7 +15,7 @@ from test_m2 import item
 from test_records import create
 
 from app.config import ROOT, Settings
-from app.db import make_engine
+from app.db import make_engine, migration_head
 from app.main import create_app
 from app.models_ai import AIConfig, AITask
 from app.schemas_ai import normalize_url
@@ -408,7 +408,10 @@ def test_upgrade_from_m2_retains_records(tmp_path):
     with TestClient(create_app(settings)):
         with sqlite3.connect(settings.database_path) as db:
             assert db.execute("SELECT username FROM users").fetchone()[0] == "legacy"
-            assert db.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0003_m3"
+            assert (
+                db.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+                == migration_head()
+            )
             assert not db.execute("PRAGMA foreign_key_check").fetchall()
 
 
