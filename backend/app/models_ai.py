@@ -89,6 +89,8 @@ class AISuggestion(Base):
     record_revision_id: Mapped[str | None] = mapped_column(ForeignKey("record_revisions.id"))
     relation_id: Mapped[str | None] = mapped_column(ForeignKey("graph_relations.id"))
     relation_revision_id: Mapped[str | None] = mapped_column(ForeignKey("m2_revisions.id"))
+    contribution_id: Mapped[str | None] = mapped_column(ForeignKey("contributions.id"))
+    contribution_revision_id: Mapped[str | None] = mapped_column(ForeignKey("growth_revisions.id"))
     created_at: Mapped[str] = mapped_column(String(40), default=now)
     decided_at: Mapped[str | None] = mapped_column(String(40))
 

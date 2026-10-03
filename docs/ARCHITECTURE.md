@@ -340,3 +340,79 @@ API Key 使用 cryptography Fernet 加密落库。主密钥默认 `data/ai-maste
 M3 实际模块：`models_ai.py` / `schemas_ai.py` 定义存储与契约；`ai_credentials.py` 管理加密与配置；`ai_data.py` 定位材料、校验引用并投影删除/更新状态；`ai_prompts.py` 管理 m3.v1 提示词；`ai_worker.py` 执行受限 HTTP 调用；`ai_commands.py` 处理事务与采纳；`api_ai.py` 暴露接口。前端模型设置、材料选择、收件箱分别延迟加载，共用生成的 API 类型。
 
 采纳产生的 RecordRevision/Revision 使用 `ai_accept` 操作名，在同一首次快照中记录 `ai_suggestion_id`；历史页可回到建议。模型调用只含选定材料，当前材料对照仅返回当前用户的界面，不加入外发提示。错误状态和取消通过数据库任务状态检查保护，建议全部校验成功后才一起保存。配置清除保留递增版本，避免旧排队任务错误地使用重新创建的配置。
+
+## 11. M4：贡献与成长（实现完成，集中验证待执行）
+
+本轮开放贡献时间线、能力档案、理解变化及 AI 贡献候选；用户已确认允许先保存自述，AI 仅分析显式选择的科研记录字段/来源。无材料标为“用户自述／待补依据”，有引用不等于系统验证。AI 评分、自动能力判定、AI 规划及导出不在本轮。
+
+```mermaid
+flowchart TD
+    R[记录/行动/复盘的固定版本] --> C[用户确认贡献]
+    C --> G[能力实例/理解变化]
+    R --> G
+    G --> F[周复盘选择固定版本]
+    F --> A[用户明确创建行动]
+    G --> A
+    A --> R
+    S[用户选择记录字段与来源] --> T[AI 贡献候选任务]
+    T --> U[引用校验与用户修改确认]
+    U --> C
+```
+
+### 11.1 存储与版本
+
+新增迁移 `0004_m4`：Contribution、AbilityTag、GrowthEntry、GrowthEntryTag、GrowthEvidence、GrowthRevision、GrowthActionLink。贡献/成长有独立 owner/version/deleted_at；标签归档恢复并保留历史。GrowthEntry.kind 固定为 ability_instance/understanding_change，差异字段使用严格 Pydantic JSON。发生日期为本地日历日期，技术时间 UTC；时间线按发生日期、创建时间、ID 倒序稳定分页。
+
+GrowthEvidence 的宿主是贡献或成长（互斥 FK）；依据固定 RecordRevision、M2Revision（行动/复盘）或 GrowthRevision（仅贡献，且仅成长可引用），真实 FK 加互斥约束。记录可引用 source_version_id、字段与 Unicode 片段；其他对象引用整个快照。理解变化分 before/trigger/after，其余为 context。
+
+创建/编辑的当前内容、依据、标签和历史同事务；内部服务 flush，外层 commit；expected_version 原子比较；创建及复合操作复用 MutationRequest。贡献每次保存须用户确认，保存确认时间。来源变更比较 reviewed_version；下层引用通过迭代访问集合投影状态，reviewed_dependencies 保存明确复核时的下层版本映射，并提示复核，复核提交 current_versions 同时校验直接与下层版本，明确确认保留旧依据；删除来源读取时遮蔽，恢复后重新投影，不能新增删除引用。
+
+引用只返回本层快照和带可用性的摘要，不递归展开整个历史。成长引用贡献时汇总该贡献依据的可用性/复核提示；成长与复盘互引按需读取，使用访问集合防重复。既有用户文字不因依据删除而清除。
+
+能力实例至少一个标签；标签同账号去首尾空白后名称唯一，归档名称保留。用户自述无需材料；材料记录需要记录/行动/复盘引用；任务实践需要已完成且有结项说明的行动快照。贡献自述不能自动升级能力依据类型。标签统计来自后端筛选范围，历史保存当时名称。
+
+### 11.2 接口与联动
+
+新增 `/contributions`、`/growth-entries` 版本化 CRUD、restore/revisions/review；`/ability-tags` 创建修改/归档恢复/历史/筛选统计；`/growth/materials`、按需读取单层快照的 `/growth/material` 与 `/growth/context` 提供受账号约束的材料和关联投影。贡献/成长 `/{id}/actions` 在一个事务中创建行动和 GrowthActionLink，失败不撤销之前已保存的成长。行动详情可查看来源固定修订。
+
+复盘材料增加 contribution/growth_entry 类型；周复盘按修订发生的 UTC 区间查询，发生日期单独展示。归档项目只读，已有引用可保留，新选归档来源需先恢复。贡献与成长不创建 GraphNode。
+
+### 11.3 AI 增量
+
+任务类型 contribution_candidates，1–20 条记录、32,000 字符、最多 10 个候选。复用当前加密配置、执行器和收件箱；新增提示词版本 m4.contributions.v1，M3 提示词版本保留。提示词、校验、采纳均显式分派，未知类型拒绝。
+
+非空事实字段须引用（类型可用候选整体依据）；未知本人参与/帮助/影响留空。采纳须用户确认归属、选择日期/项目、保留至少一个有效引用；用户增补字段独立标记，不把原引用冒充增补内容的证明。AISuggestion 新增贡献与贡献修订 FK，贡献、历史、采纳结果和事件同事务；同一建议重复采纳返回原结果。
+
+### 11.4 验证安排
+
+本轮补充自动化脚本和 FUNCTIONAL_TESTS.md，功能用例均保持未执行；仅运行必要格式、类型、构建、OpenAPI 与文档检查。日常数据库升级待实际启动前备份；不为本轮验收启动真实模型或改写日常数据。
+
+### 11.5 落实细节与迁移决策
+
+- `backend/app/api_growth.py` 提供路由；`growth_commands.py` 维护事务命令；`growth_data.py` 负责固定版本、可用性、复核与单层投影；`growth_queries.py` 负责筛选、统计、材料和上下文。前端 `growth-page/editor/shared/material` 分开组织，页面按路由延迟加载。
+- 发生日期范围包含两端；UTC 周复盘范围起点包含、终点不包含，查询贡献/成长在期间内的最新修订。默认每页 20 条；标签数量对完整筛选集合统计，不从页面推算。
+- 当前 M4 列表先按数据库条件筛选，再做引用状态计算和分页；适用于当前个人本地规模，大规模优化不在本轮。不会递归向前端发送整条引用链；状态检查使用迭代访问集合，不依赖 Python 递归深度。
+- `GrowthEvidence.reviewed_dependencies` 只记录版本确认，不替换原快照。删除的下层材料使依据标为不可用；恢复后重新投影。再次更新会重新提示复核。历史快照保存当时的直接及下层确认信息。
+- 贡献编辑每次要求重新勾选本人确认；客户端在任何归属描述改动后清除确认。冲突重载展示服务器内容，保留表单，显式对照后才改用新的版本号。
+- `0004_m4` 使用冻结的 SQLite 建表 DDL。AI 建议表只新增两个可空外键列，采用 SQLite 原生 `ADD COLUMN ... REFERENCES`，不重建已有表：避免开启外键时批量重建父表影响已有建议事件。这是对计划“批处理迁移”的针对性调整；后续必须重建的结构变化仍使用批处理。原 M1–M3 迁移未修改。实际升级与 FK 检查留待独立库集中验证。
+- M4 没有新增包依赖或模型配置项；提示词版本 `m4.contributions.v1`，无 AI 能力评分、贡献比例或自动成长创建。候选采纳通过同一贡献命令，增加 `ai_suggestion_id`、`user_supplement_fields` 历史追溯。
+
+```mermaid
+erDiagram
+    Contribution ||--o{ GrowthRevision : history
+    GrowthEntry ||--o{ GrowthRevision : history
+    AbilityTag ||--o{ GrowthRevision : history
+    GrowthEntry ||--o{ GrowthEntryTag : tags
+    AbilityTag ||--o{ GrowthEntryTag : instances
+    Contribution ||--o{ GrowthEvidence : evidence
+    GrowthEntry ||--o{ GrowthEvidence : evidence
+    RecordRevision ||--o{ GrowthEvidence : fixed_record
+    M2Revision ||--o{ GrowthEvidence : fixed_action_or_reflection
+    GrowthRevision ||--o{ GrowthEvidence : fixed_contribution
+    SourceVersion o|--o{ GrowthEvidence : optional_source
+    GrowthRevision ||--o{ GrowthActionLink : origin
+    Action ||--o| GrowthActionLink : follows
+    AISuggestion o|--o| Contribution : accepted_as
+```
+
+依据表的宿主及目标外键是互斥关系，图示只表示可能关联；具体限制以表约束和业务校验为准。周复盘复用 M2 的类型化 JSON 材料列表，写入及读取时校验固定修订与账号，未额外创建重复的复盘正文。
