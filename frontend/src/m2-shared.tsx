@@ -1,3 +1,5 @@
+import { MaterialContent, FixedMaterial } from "./growth-material";
+import type { GrowthMaterial } from "./growth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -226,6 +228,7 @@ export function useEditor(onClose: () => void) {
       await fn();
       setDirty(false);
       await client.invalidateQueries({ queryKey: ["m2"] });
+      await client.invalidateQueries({ queryKey: ["growth"] });
       await client.invalidateQueries({ queryKey: ["records"] });
       onClose();
     } catch (e) {
@@ -504,6 +507,8 @@ export function EvidenceEditor({
   );
 }
 export function SnapshotView({ value }: { value: Record<string, unknown> }) {
+  if (value.occurred_on || Array.isArray(value.references))
+    return <MaterialContent value={value} />;
   const details = (value.details || value.fields || {}) as Record<
     string,
     unknown
@@ -582,6 +587,9 @@ export function SnapshotView({ value }: { value: Record<string, unknown> }) {
         ))}
       {Array.isArray(value.evidence) && (
         <EvidenceCards evidence={value.evidence as Evidence[]} />
+      )}
+      {Boolean(value.growth_origin) && (
+        <FixedMaterial material={value.growth_origin as GrowthMaterial} />
       )}
       {Array.isArray(value.results) &&
         value.results.map(

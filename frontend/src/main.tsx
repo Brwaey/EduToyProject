@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Login } from "./auth";
 import "./m2.css";
 import "./ai.css";
+import "./growth.css";
 import { App } from "./shell";
 import "./style.css";
 

@@ -1,3 +1,4 @@
+import { GrowthContext } from "./growth-shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -583,6 +584,9 @@ export function ItemDetail({
         {onClose && <button onClick={onClose}>关闭详情</button>}
       </div>
       <h2>{i.title}</h2>
+      {i.kind === "question" && !i.deleted_at && (
+        <GrowthContext kind="research_item" id={i.id} readonly={i.archived} />
+      )}
       <div className="metadata">
         <span>
           {projects.find((p) => p.id === i.project_id)?.name || "未归类"}

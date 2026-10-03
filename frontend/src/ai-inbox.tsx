@@ -1,3 +1,4 @@
+import AIContributionReview from "./ai-contribution";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
@@ -70,6 +71,9 @@ export default function AIInbox({ projects }: { projects: Project[] }) {
         </div>
         <div className="inline-actions">
           <Link to="/settings/model">模型设置</Link>
+          <Link to="/records/ai/new?kind=contribution_candidates">
+            寻找贡献候选
+          </Link>
           <Link to="/records/ai/new?kind=record_draft">整理探索卡</Link>
           <Link
             className="primary"
@@ -349,6 +353,9 @@ function TaskDetail({
       {t.status === "succeeded" &&
         t.kind === "relation_suggestions" &&
         !t.suggestion_ids.length && <p>未找到有充分依据的关系建议。</p>}
+      {t.status === "succeeded" &&
+        t.kind === "contribution_candidates" &&
+        !t.suggestion_ids.length && <p>未找到依据充分的贡献候选。</p>}
       <ErrorNotice error={error} />
     </article>
   );
@@ -364,9 +371,16 @@ function SuggestionDetail({ id }: { id: string }) {
       {query.isPending ? (
         <Loading />
       ) : (
-        query.data && (
+        query.data &&
+        (query.data.kind === "contribution_candidates" ? (
+          <AIContributionReview
+            s={query.data}
+            refresh={() => query.refetch()}
+            materials={<Materials task={query.data.task} />}
+          />
+        ) : (
           <SuggestionReview s={query.data} refresh={() => query.refetch()} />
-        )
+        ))
       )}
     </>
   );

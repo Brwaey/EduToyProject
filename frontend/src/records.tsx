@@ -1,3 +1,4 @@
+import { GrowthContext } from "./growth-shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -379,6 +380,7 @@ function RecordEditor({
       client.setQueryData(["record", result.id], result);
       await client.invalidateQueries({ queryKey: ["records"] });
       await client.invalidateQueries({ queryKey: ["m2"] });
+      await client.invalidateQueries({ queryKey: ["growth"] });
       await client.invalidateQueries({ queryKey: ["revisions", result.id] });
       if (onDone) onDone();
       else setTimeout(() => navigate("/records/" + result.id), 0);
@@ -573,6 +575,7 @@ function RecordDetail({ id, projects }: { id: string; projects: Project[] }) {
       client.setQueryData(["record", id], next);
       await client.invalidateQueries({ queryKey: ["records"] });
       await client.invalidateQueries({ queryKey: ["m2"] });
+      await client.invalidateQueries({ queryKey: ["growth"] });
       navigate("/records" + (r.deleted_at ? "" : "?deleted=true"));
     } catch (e) {
       setError(e);
@@ -694,6 +697,9 @@ function RecordDetail({ id, projects }: { id: string; projects: Project[] }) {
                 <Markdown>{r.fields[key as keyof Fields]!}</Markdown>
               </section>
             ) : null,
+          )}
+          {!r.deleted_at && (
+            <GrowthContext kind="record" id={r.id} readonly={!!archived} />
           )}
           {!r.deleted_at && (
             <RecordContext
@@ -839,6 +845,7 @@ function Sources({
       await client.invalidateQueries({ queryKey: ["revisions", record.id] });
       await client.invalidateQueries({ queryKey: ["records"] });
       await client.invalidateQueries({ queryKey: ["m2"] });
+      await client.invalidateQueries({ queryKey: ["growth"] });
     } catch (e) {
       setError(e);
     } finally {
@@ -1042,6 +1049,7 @@ function ImportDialog({
       });
       await client.invalidateQueries({ queryKey: ["records"] });
       await client.invalidateQueries({ queryKey: ["m2"] });
+      await client.invalidateQueries({ queryKey: ["growth"] });
       onClose();
       navigate("/records/" + r.id);
     } catch (e) {

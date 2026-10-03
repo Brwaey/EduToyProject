@@ -23,9 +23,11 @@ export default function AICreate() {
   const [params] = useSearchParams(),
     navigate = useNavigate();
   const kind: AIKind =
-    params.get("kind") === "relation_suggestions"
-      ? "relation_suggestions"
-      : "record_draft";
+    params.get("kind") === "contribution_candidates"
+      ? "contribution_candidates"
+      : params.get("kind") === "relation_suggestions"
+        ? "relation_suggestions"
+        : "record_draft";
   const [choices, setChoices] = useState<Choice[]>([]),
     [preview, setPreview] = useState<AIPreview | null>(null),
     [error, setError] = useState<unknown>(null),
@@ -47,7 +49,8 @@ export default function AICreate() {
     setError(null);
     setPreview(null);
     try {
-      if (kind === "record_draft" && node.object_kind !== "record") return;
+      if (kind !== "relation_suggestions" && node.object_kind !== "record")
+        return;
       let choice: Choice;
       if (node.object_kind === "record") {
         const [r, sources] = await Promise.all([
@@ -199,7 +202,13 @@ export default function AICreate() {
       <header className="page-header">
         <div>
           <div className="eyebrow">AI · SELECT MATERIALS</div>
-          <h1>{kind === "record_draft" ? "AI 整理探索卡" : "AI 建议关联"}</h1>
+          <h1>
+            {kind === "record_draft"
+              ? "AI 整理探索卡"
+              : kind === "contribution_candidates"
+                ? "AI 寻找贡献候选"
+                : "AI 建议关联"}
+          </h1>
           <p>仅发送本次勾选的材料；生成后由你决定是否采纳。</p>
         </div>
         <Link to="/records/ai">返回收件箱</Link>
@@ -212,7 +221,7 @@ export default function AICreate() {
       )}
       <div className="ai-card">
         <ObjectPicker
-          kind={kind === "record_draft" ? "record" : undefined}
+          kind={kind !== "relation_suggestions" ? "record" : undefined}
           label="选择科研材料"
           onPick={(n) => void pick(n)}
         />

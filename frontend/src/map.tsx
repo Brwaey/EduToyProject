@@ -315,6 +315,31 @@ export default function MapPage({ projects }: { projects: Project[] }) {
       api<Page<Item>>("/research-items?deleted=true&page=" + catalogPage),
     enabled: catalog,
   });
+  useEffect(() => {
+    const id = params.get("item");
+    if (!id) return;
+    api<Item>("/research-items/" + id)
+      .then((i) =>
+        setSelected({
+          id: "research_item:" + i.id,
+          object_id: i.id,
+          object_kind: "research_item",
+          kind: i.kind,
+          title: i.title,
+          project_id: i.project_id,
+          project_name:
+            projects.find((p) => p.id === i.project_id)?.name || "未归类",
+          status: i.status,
+          version: i.version,
+          archived: i.archived,
+          external: false,
+        }),
+      )
+      .catch(setLinkError);
+    const next = new URLSearchParams(params);
+    next.delete("item");
+    setParams(next, { replace: true });
+  }, [params]);
   // Deep links from the record screen open a preselected relation without adding a node.
   useEffect(() => {
     const record = params.get("record");
@@ -409,6 +434,10 @@ export default function MapPage({ projects }: { projects: Project[] }) {
           <p>让分散的记录，逐渐形成自己的研究脉络。</p>
         </div>
         <div className="inline-actions">
+          <Link to="/records/ai/new?kind=relation_suggestions">
+            AI 建议关联
+          </Link>
+          <Link to="/records/ai">AI 收件箱</Link>
           <button onClick={() => setPicker(true)}>关联已有记录</button>
           <button className="primary" onClick={() => setCreateKind("question")}>
             新建研究问题
@@ -757,7 +786,3 @@ export default function MapPage({ projects }: { projects: Project[] }) {
     </section>
   );
 }
-<div className="inline-actions">
-  <Link to="/records/ai/new?kind=relation_suggestions">AI 建议关联</Link>
-  <Link to="/records/ai">AI 收件箱</Link>
-</div>;

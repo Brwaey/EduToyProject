@@ -32,6 +32,7 @@ const RecordsPage = lazy(() =>
 );
 const MapPage = lazy(() => import("./map"));
 const NextPage = lazy(() => import("./planning"));
+const GrowthPage = lazy(() => import("./growth-page"));
 
 export function App() {
   useBlocker(
@@ -124,7 +125,7 @@ export function App() {
           </NavLink>
           <NavLink to="/growth">
             <Sprout size={19} />
-            我的成长<span className="nav-soon">待开发</span>
+            我的成长
           </NavLink>
           <NavLink to="/next">
             <Compass size={19} />
@@ -205,6 +206,10 @@ export function App() {
         ) : location.pathname === "/map" ? (
           <Suspense fallback={<Loading />}>
             <MapPage projects={projects.data || []} />
+          </Suspense>
+        ) : location.pathname === "/growth" ? (
+          <Suspense fallback={<Loading />}>
+            <GrowthPage projects={projects.data || []} />
           </Suspense>
         ) : location.pathname === "/next" ? (
           <Suspense fallback={<Loading />}>

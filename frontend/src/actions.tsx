@@ -1,3 +1,5 @@
+import { FixedMaterial, GrowthContext } from "./growth-shared";
+import { growthPath, type GrowthObject, type GrowthMaterial } from "./growth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -39,20 +41,33 @@ export function ActionEditor({
   projects,
   direction,
   originReflection,
+  growthOrigin,
   onClose,
 }: {
   initial?: Action;
   projects: Project[];
   direction?: Item;
   originReflection?: string;
+  growthOrigin?: GrowthObject;
   onClose: () => void;
 }) {
   const editor = useEditor(onClose),
     client = useQueryClient(),
     identity = useRef({ signature: "", id: crypto.randomUUID() });
-  const [title, setTitle] = useState(initial?.title || ""),
+  const [title, setTitle] = useState(
+      initial?.title ||
+        (growthOrigin
+          ? String(
+              growthOrigin.details.next_steps ||
+                "围绕“" + growthOrigin.title + "”继续探索",
+            ).slice(0, 200)
+          : ""),
+    ),
     [project, setProject] = useState(
-      initial?.project_id || direction?.project_id || "",
+      initial?.project_id ||
+        direction?.project_id ||
+        growthOrigin?.project_id ||
+        "",
     ),
     [directionId, setDirectionId] = useState(
       initial?.direction_id || direction?.id || "",
@@ -67,7 +82,9 @@ export function ActionEditor({
     [details, setDetails] = useState<Action["details"]>(
       initial?.details || {
         research_goal: "",
-        learning_goal: "",
+        learning_goal: growthOrigin
+          ? String(growthOrigin.details.next_steps || "")
+          : "",
         completion_criteria: "",
         expected_date: null,
         effort: "",
@@ -98,6 +115,25 @@ export function ActionEditor({
       details,
       results,
     };
+    if (growthOrigin && !initial) {
+      const action = {
+        ...payload,
+        request_id: requestIdentity(identity, payload),
+      };
+      editor.save(async () => {
+        await api(
+          growthPath(growthOrigin.kind) + "/" + growthOrigin.id + "/actions",
+          json("POST", {
+            expected_version: growthOrigin.version,
+            revision_id: growthOrigin.revision_id,
+            request_id: action.request_id,
+            action,
+          }),
+        );
+        await client.invalidateQueries({ queryKey: ["growth"] });
+      });
+      return;
+    }
     editor.save(() =>
       api(
         initial ? "/actions/" + initial.id : "/actions",
@@ -622,6 +658,15 @@ export function ActionDetail({
         <button onClick={onClose}>关闭详情</button>
       </div>
       <h2>{a.title}</h2>
+      {a.growth_origin && (
+        <section>
+          <h3>发起这次行动的贡献／成长</h3>
+          <FixedMaterial material={a.growth_origin as GrowthMaterial} />
+        </section>
+      )}
+      {!a.deleted_at && (
+        <GrowthContext kind="action" id={a.id} readonly={a.archived} />
+      )}
       <div className="metadata">
         <span>
           {projects.find((p) => p.id === a.project_id)?.name || "未归类"}

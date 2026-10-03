@@ -1,3 +1,4 @@
+import { GrowthContext, MaterialContent } from "./growth-shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -303,8 +304,13 @@ export function ReflectionEditor({
                         ? "科研记录"
                         : m.kind === "action"
                           ? "行动"
-                          : "研究内容"}{" "}
-                      · 第 {m.version} 版
+                          : m.kind === "contribution"
+                            ? "个人贡献"
+                            : m.kind === "growth_entry"
+                              ? "成长条目"
+                              : "研究内容"}{" "}
+                      · 第 {m.version} 版{" "}
+                      {m.occurred_on ? " · 发生于 " + m.occurred_on : ""}
                     </small>
                   </span>
                 </label>
@@ -414,6 +420,9 @@ export function ReflectionDetail({
         <button onClick={onClose}>关闭详情</button>
       </div>
       <h2>{r.title}</h2>
+      {!r.deleted_at && (
+        <GrowthContext kind="reflection" id={r.id} readonly={r.archived} />
+      )}
       <div className="metadata">
         <span>第 {r.version} 版</span>
         <span>
@@ -461,9 +470,15 @@ export function ReflectionDetail({
       {r.materials.map((m) => (
         <details className="evidence-card" key={m.revision_id}>
           <summary>
-            {m.title} · 第 {m.version} 版
+            {m.title} · 第 {m.version} 版{" "}
+            {m.occurred_on ? " · 发生于 " + m.occurred_on : ""}
           </summary>
-          {m.snapshot && <SnapshotView value={m.snapshot} />}
+          {m.snapshot &&
+            (["contribution", "growth_entry"].includes(m.kind) ? (
+              <MaterialContent value={m.snapshot} />
+            ) : (
+              <SnapshotView value={m.snapshot} />
+            ))}
         </details>
       ))}
       <ErrorNotice error={error} />
