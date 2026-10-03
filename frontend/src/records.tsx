@@ -1,648 +1,55 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeft,
+  BookOpen,
+  Check,
+  Clock,
+  FileText,
+  Folder,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
   Link,
-  Navigate,
-  NavLink,
-  useBlocker,
   useLocation,
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
 import {
-  BookOpen,
-  ArrowUpRight,
-  GitBranch,
-  Sprout,
-  Compass,
-  Plus,
-  Upload,
-  LogOut,
-  Folder,
-  Search,
-  X,
-  ArrowLeft,
-  Check,
-  FileText,
-  Clock,
-  Trash2,
-  RotateCcw,
-  Pencil,
-  Archive,
-  ChevronRight,
-  LoaderCircle,
-} from "lucide-react";
-import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
-import {
   api,
-  json,
-  setCsrf,
   ApiError,
   emptyFields,
   fieldLabels,
+  json,
   outcomes,
   recordTypes,
   time,
   workStates,
-  type Auth,
   type Fields,
   type Project,
+  type RecordCreate,
   type RecordData,
   type RecordPage,
+  type RecordPatch,
   type Revision,
   type Source,
-  type RecordCreate,
-  type RecordPatch,
 } from "./api";
+import type { components } from "./api.generated";
 
-function ErrorNotice({ error }: { error: unknown }) {
-  return error ? (
-    <div className="error" role="alert">
-      {error instanceof Error ? error.message : String(error)}
-    </div>
-  ) : null;
-}
-function Loading() {
-  return (
-    <div className="loading" role="status">
-      <LoaderCircle className="spin" size={18} />
-      正在载入…
-    </div>
-  );
-}
-function Markdown({ children }: { children: string }) {
-  return (
-    <div className="markdown">
-      <ReactMarkdown
-        skipHtml
-        urlTransform={(url) =>
-          /^https?:\/\//i.test(url) ? defaultUrlTransform(url) : ""
-        }
-        components={{
-          a: ({ children, href }) =>
-            href ? (
-              <a href={href} target="_blank" rel="noreferrer">
-                {children}
-              </a>
-            ) : (
-              <span>{children}</span>
-            ),
-          img: ({ alt }) => <span>[图片：{alt}]</span>,
-        }}
-      >
-        {children}
-      </ReactMarkdown>
-    </div>
-  );
-}
-function Options({ values }: { values: Record<string, string> }) {
-  return Object.entries(values).map(([v, label]) => (
-    <option key={v} value={v}>
-      {label}
-    </option>
-  ));
-}
-function useDirtyGuard(dirty: boolean) {
-  useBlocker(() => dirty && !window.confirm("还有未保存的修改，确定离开吗？"));
-  useEffect(() => {
-    const guard = (event: BeforeUnloadEvent) => {
-      if (dirty) {
-        event.preventDefault();
-        event.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", guard);
-    return () => window.removeEventListener("beforeunload", guard);
-  }, [dirty]);
-}
-function Dialog({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    ref.current?.showModal();
-    return () => ref.current?.close();
-  }, []);
-  return (
-    <dialog
-      ref={ref}
-      className="dialog"
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
-    >
-      <header>
-        <h2>{title}</h2>
-        <button className="icon-button" onClick={onClose} aria-label="关闭">
-          <X size={20} />
-        </button>
-      </header>
-      {children}
-    </dialog>
-  );
-}
-
-export function Login() {
-  const [register, setRegister] = useState(false);
-  const [error, setError] = useState<unknown>(null);
-  const [busy, setBusy] = useState(false);
-  const client = useQueryClient(),
-    navigate = useNavigate();
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setBusy(true);
-    const form = new FormData(event.currentTarget);
-    try {
-      const body = {
-        username: form.get("username"),
-        password: form.get("password"),
-        ...(register ? { display_name: form.get("display_name") } : {}),
-      };
-      const auth = await api<Auth>(
-        register ? "/auth/register" : "/auth/login",
-        json("POST", body),
-      );
-      client.clear();
-      setCsrf(auth.csrf_token);
-      client.setQueryData(["me"], auth);
-      navigate("/records");
-    } catch (e) {
-      setError(e);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <main className="auth-page">
-      <section className="auth-intro">
-        <div className="brand">
-          <Sprout />
-          <strong>研迹</strong>
-          <span>YANJI</span>
-        </div>
-        <div>
-          <p className="eyebrow">留住探索中的每一步</p>
-          <h1>
-            让思考有迹可循，
-            <br />
-            让成长被自己看见。
-          </h1>
-          <p>
-            记录一次尝试，保留一个判断。
-            <br />
-            从零散的研究日常，慢慢长出自己的脉络。
-          </p>
-        </div>
-        <div className="auth-foot">
-          <span>记录 · 理解 · 成长</span>
-          <GitBranch size={38} />
-        </div>
-      </section>
-      <section className="auth-form">
-        <span className="small-label">你的个人科研空间</span>
-        <h2>{register ? "开始记录你的研迹" : "欢迎回来"}</h2>
-        <p className="muted">
-          {register
-            ? "创建独立账号，保存自己的研究记录。"
-            : "从上一次的思考，继续向前。"}
-        </p>
-        <form onSubmit={submit}>
-          <label>
-            用户名
-            <input
-              name="username"
-              required
-              pattern="[a-zA-Z0-9_]{3,32}"
-              minLength={3}
-              maxLength={32}
-              autoComplete="username"
-              placeholder="3–32 位字母、数字或下划线"
-            />
-          </label>
-          {register && (
-            <label>
-              显示名称
-              <input
-                name="display_name"
-                required
-                maxLength={80}
-                placeholder="希望怎样称呼你"
-              />
-            </label>
-          )}
-          <label>
-            密码
-            <input
-              name="password"
-              type="password"
-              required
-              minLength={8}
-              maxLength={128}
-              autoComplete={register ? "new-password" : "current-password"}
-              placeholder="至少 8 位"
-            />
-          </label>
-          <ErrorNotice error={error} />
-          <button className="primary full" disabled={busy}>
-            {busy ? "请稍候…" : register ? "创建账号" : "进入研迹"}
-            <ArrowUpRight size={18} />
-          </button>
-        </form>
-        <p className="auth-switch">
-          {register ? "已有账号？" : "还没有账号？"}
-          <button
-            className="text-button"
-            onClick={() => {
-              setRegister(!register);
-              setError(null);
-            }}
-          >
-            {register ? "登录" : "创建账号"}
-          </button>
-        </p>
-        <p className="privacy-note">
-          记录保存在当前服务的本地数据库中，仅对你的账号可见。
-        </p>
-      </section>
-    </main>
-  );
-}
-
-export function App() {
-  const client = useQueryClient(),
-    navigate = useNavigate(),
-    location = useLocation();
-  const me = useQuery({
-    queryKey: ["me"],
-    queryFn: async () => {
-      const value = await api<Auth>("/auth/me");
-      setCsrf(value.csrf_token);
-      return value;
-    },
-    staleTime: Infinity,
-  });
-  const projects = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api<Project[]>("/projects"),
-    enabled: !!me.data,
-  });
-  const [manager, setManager] = useState(false),
-    [sessionExpired, setSessionExpired] = useState(false),
-    [logoutError, setLogoutError] = useState<unknown>(null);
-  useEffect(() => {
-    const expired = () => {
-      setCsrf("");
-      setSessionExpired(true);
-    };
-    window.addEventListener("session-expired", expired);
-    return () => window.removeEventListener("session-expired", expired);
-  }, [client, navigate]);
-  if (me.isPending) return <Loading />;
-  if (me.error instanceof ApiError && me.error.status === 401)
-    return <Navigate to="/login" replace />;
-  if (me.error || !me.data)
-    return (
-      <main className="fatal">
-        <ErrorNotice error={me.error} />
-        <button onClick={() => me.refetch()}>重新连接</button>
-      </main>
-    );
-  async function logout() {
-    if (
-      document.querySelector('[data-dirty="true"]') &&
-      !window.confirm("还有未保存的修改，确定退出吗？")
-    )
-      return;
-    try {
-      await api("/auth/logout", { method: "POST" });
-      setCsrf("");
-      client.clear();
-      navigate("/login");
-    } catch (e) {
-      setLogoutError(e);
-    }
-  }
-  const onRecords =
-    location.pathname === "/" || location.pathname.startsWith("/records");
-  const other =
-    location.pathname === "/map"
-      ? ["研究地图", "把研究问题、尝试与证据连接起来。", "M2 · 研究脉络与关系"]
-      : location.pathname === "/growth"
-        ? [
-            "我的成长",
-            "用具体的判断与实例，回看理解的变化。",
-            "M4 · 贡献与能力成长",
-          ]
-        : ["下一步", "从已有证据出发，选择下一次探索。", "M2 · 方向与行动"];
-  return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <Link className="brand" to="/records">
-          <Sprout size={26} />
-          <strong>研迹</strong>
-          <span>YANJI</span>
-        </Link>
-        <div className="workspace-label">个人科研空间</div>
-        <nav aria-label="主导航">
-          <NavLink to="/map">
-            <GitBranch size={19} />
-            研究地图<span className="nav-soon">待开发</span>
-          </NavLink>
-          <NavLink to="/records" className={onRecords ? "active" : ""}>
-            <BookOpen size={19} />
-            科研记录
-          </NavLink>
-          <NavLink to="/growth">
-            <Sprout size={19} />
-            我的成长<span className="nav-soon">待开发</span>
-          </NavLink>
-          <NavLink to="/next">
-            <Compass size={19} />
-            下一步<span className="nav-soon">待开发</span>
-          </NavLink>
-        </nav>
-        <div className="sidebar-projects">
-          <div className="section-label">
-            研究项目
-            <button
-              className="icon-button"
-              onClick={() => setManager(true)}
-              aria-label="管理项目"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-          <ErrorNotice error={projects.error} />
-          {projects.data
-            ?.filter((p) => !p.archived)
-            .slice(0, 6)
-            .map((p) => (
-              <Link key={p.id} to={"/records?project=" + p.id}>
-                <Folder size={15} />
-                <span>{p.name}</span>
-              </Link>
-            ))}
-          <button className="text-button" onClick={() => setManager(true)}>
-            管理项目与归档 <ChevronRight size={14} />
-          </button>
-        </div>
-        <div className="sidebar-bottom">
-          <div className="user">
-            <span className="avatar">
-              {me.data.user.display_name.slice(0, 1)}
-            </span>
-            <div>
-              <strong>{me.data.user.display_name}</strong>
-              <small>个人账号</small>
-            </div>
-            <button
-              className="icon-button mobile-projects"
-              onClick={() => setManager(true)}
-              aria-label="管理项目"
-            >
-              <Folder size={17} />
-            </button>
-            <button
-              className="icon-button"
-              onClick={logout}
-              aria-label="退出登录"
-            >
-              <LogOut size={17} />
-            </button>
-          </div>
-          <ErrorNotice error={logoutError} />
-          <p>每一次认真思考，都有迹可循。</p>
-        </div>
-      </aside>
-      <main className="main-content">
-        {onRecords ? (
-          <RecordsPage projects={projects.data || []} />
-        ) : (
-          <section className="future-page">
-            <span className="eyebrow">{other[2]}</span>
-            <h1>{other[0]}</h1>
-            <p>{other[1]}</p>
-            <div className="future-state">
-              <Compass size={40} />
-              <h2>这一页正在准备中</h2>
-              <p>
-                当前版本已开放科研记录。你现在保存的材料和判断，将成为后续研究脉络的基础。
-              </p>
-              <Link className="primary" to="/records">
-                去记录一次探索 <ArrowUpRight size={17} />
-              </Link>
-            </div>
-          </section>
-        )}
-      </main>
-      {manager && (
-        <ProjectManager
-          projects={projects.data || []}
-          onClose={() => setManager(false)}
-        />
-      )}
-      {sessionExpired && (
-        <Reauthenticate
-          username={me.data.user.username}
-          onClose={() => setSessionExpired(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-function Reauthenticate({
-  username,
-  onClose,
-}: {
-  username: string;
-  onClose: () => void;
-}) {
-  const client = useQueryClient();
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<unknown>(null);
-  const [busy, setBusy] = useState(false);
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      const auth = await api<Auth>(
-        "/auth/login",
-        json("POST", { username, password }),
-      );
-      setCsrf(auth.csrf_token);
-      client.setQueryData(["me"], auth);
-      onClose();
-    } catch (e) {
-      setError(e);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <Dialog title="登录已过期" onClose={onClose}>
-      <form onSubmit={submit}>
-        <p className="muted">当前输入已保留。重新登录后，请再次点击保存。</p>
-        <label>
-          用户名
-          <input value={username} readOnly autoComplete="username" />
-        </label>
-        <label>
-          密码
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-        </label>
-        <ErrorNotice error={error} />
-        <button className="primary" disabled={busy}>
-          {busy ? "登录中…" : "重新登录"}
-        </button>
-      </form>
-    </Dialog>
-  );
-}
-
-function ProjectManager({
-  projects,
-  onClose,
-}: {
-  projects: Project[];
-  onClose: () => void;
-}) {
-  const client = useQueryClient();
-  const [selected, setSelected] = useState<Project | null>(null),
-    [name, setName] = useState(""),
-    [description, setDescription] = useState("");
-  const [error, setError] = useState<unknown>(null),
-    [busy, setBusy] = useState(false),
-    [dirty, setDirty] = useState(false);
-  const close = () => {
-    if (!dirty || window.confirm("放弃尚未保存的项目修改？")) onClose();
-  };
-  const choose = (p: Project | null) => {
-    if (dirty && !window.confirm("放弃尚未保存的项目修改？")) return;
-    setSelected(p);
-    setName(p?.name || "");
-    setDescription(p?.description || "");
-    setDirty(false);
-    setError(null);
-  };
-  async function save(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      await api(
-        selected ? "/projects/" + selected.id : "/projects",
-        json(selected ? "PATCH" : "POST", { name, description }),
-      );
-      setDirty(false);
-      setSelected(null);
-      setName("");
-      setDescription("");
-      await client.invalidateQueries({ queryKey: ["projects"] });
-    } catch (e) {
-      setError(e);
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function archive(p: Project) {
-    setBusy(true);
-    setError(null);
-    try {
-      await api("/projects/" + p.id, json("PATCH", { archived: !p.archived }));
-      await client.invalidateQueries({ queryKey: ["projects"] });
-    } catch (e) {
-      setError(e);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <Dialog title="管理研究项目" onClose={close}>
-      <div className="project-manager">
-        <section>
-          <button className="subtle" onClick={() => choose(null)}>
-            <Plus size={16} />
-            新建项目
-          </button>
-          {projects.map((p) => (
-            <div className="project-row" key={p.id}>
-              <button className="text-button" onClick={() => choose(p)}>
-                {p.name}
-                {p.archived && <small>已归档</small>}
-              </button>
-              <button
-                className="icon-button"
-                disabled={busy}
-                aria-label={(p.archived ? "恢复项目 " : "归档项目 ") + p.name}
-                onClick={() => archive(p)}
-              >
-                {p.archived ? <RotateCcw size={16} /> : <Archive size={16} />}
-              </button>
-            </div>
-          ))}
-        </section>
-        <form onSubmit={save}>
-          <h3>{selected ? "编辑项目" : "新建项目"}</h3>
-          <label>
-            项目名称
-            <input
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setDirty(true);
-              }}
-              required
-              maxLength={120}
-            />
-          </label>
-          <label>
-            项目说明
-            <textarea
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value);
-                setDirty(true);
-              }}
-              rows={4}
-              maxLength={10000}
-            />
-          </label>
-          <ErrorNotice error={error} />
-          <button className="primary" disabled={busy}>
-            保存项目
-          </button>
-          <p className="muted small">
-            归档保留已有记录。恢复项目后可继续编辑。
-          </p>
-        </form>
-      </div>
-    </Dialog>
-  );
-}
-
-function RecordsPage({ projects }: { projects: Project[] }) {
+import {
+  Dialog,
+  ErrorNotice,
+  Loading,
+  Markdown,
+  Options,
+  useDirtyGuard,
+} from "./common";
+export function RecordsPage({ projects }: { projects: Project[] }) {
   const location = useLocation(),
     [params, setParams] = useSearchParams();
   const [importing, setImporting] = useState(false);
@@ -967,6 +374,7 @@ function RecordEditor({
       setDirty(false);
       client.setQueryData(["record", result.id], result);
       await client.invalidateQueries({ queryKey: ["records"] });
+      await client.invalidateQueries({ queryKey: ["m2"] });
       await client.invalidateQueries({ queryKey: ["revisions", result.id] });
       if (onDone) onDone();
       else setTimeout(() => navigate("/records/" + result.id), 0);
@@ -1160,6 +568,7 @@ function RecordDetail({ id, projects }: { id: string; projects: Project[] }) {
       );
       client.setQueryData(["record", id], next);
       await client.invalidateQueries({ queryKey: ["records"] });
+      await client.invalidateQueries({ queryKey: ["m2"] });
       navigate("/records" + (r.deleted_at ? "" : "?deleted=true"));
     } catch (e) {
       setError(e);
@@ -1271,6 +680,13 @@ function RecordDetail({ id, projects }: { id: string; projects: Project[] }) {
                 <Markdown>{r.fields[key as keyof Fields]!}</Markdown>
               </section>
             ) : null,
+          )}
+          {!r.deleted_at && (
+            <RecordContext
+              id={r.id}
+              version={r.version}
+              readonly={!!archived}
+            />
           )}
         </>
       ) : tab === "sources" ? (
@@ -1401,6 +817,7 @@ function Sources({
       client.setQueryData(["record", record.id], result);
       await client.invalidateQueries({ queryKey: ["revisions", record.id] });
       await client.invalidateQueries({ queryKey: ["records"] });
+      await client.invalidateQueries({ queryKey: ["m2"] });
     } catch (e) {
       setError(e);
     } finally {
@@ -1603,6 +1020,7 @@ function ImportDialog({
         body: data,
       });
       await client.invalidateQueries({ queryKey: ["records"] });
+      await client.invalidateQueries({ queryKey: ["m2"] });
       onClose();
       navigate("/records/" + r.id);
     } catch (e) {
@@ -1661,5 +1079,67 @@ function ImportDialog({
         </button>
       </form>
     </Dialog>
+  );
+}
+
+function RecordContext({
+  id,
+  version,
+  readonly,
+}: {
+  id: string;
+  version: number;
+  readonly: boolean;
+}) {
+  const context = useQuery({
+    queryKey: ["m2", "record-context", id, version],
+    queryFn: () =>
+      api<components["schemas"]["ContextOut"]>("/records/" + id + "/context"),
+  });
+  return (
+    <section className="record-context">
+      <h3>这条记录的研究脉络</h3>
+      <div className="inline-actions">
+        {!readonly && (
+          <Link className="primary" to={"/map?record=" + id}>
+            建立地图关联
+          </Link>
+        )}
+        <Link to={"/next?tab=reflections&new=attempt&record=" + id}>
+          从这次尝试开始复盘
+        </Link>
+      </div>
+      <ErrorNotice error={context.error} />
+      {context.data && (
+        <>
+          <p className="muted">
+            {context.data.relations.length
+              ? `已建立 ${context.data.relations.length} 条关系`
+              : "尚未建立关联，记录还未进入地图。"}
+          </p>
+          {context.data.relations.map((r) => (
+            <p key={r.id}>
+              <Link to={"/map?focus=" + r.source_id}>
+                {r.source?.title || "已删除内容"} →{" "}
+                {r.target?.title || "已删除内容"}
+              </Link>
+              {r.needs_review && " · 待复核"}
+            </p>
+          ))}
+          {context.data.actions.map((a) => (
+            <p key={a.id}>
+              相关行动：
+              <Link to={"/next?tab=actions&item=" + a.id}>{a.title}</Link>
+            </p>
+          ))}
+          {context.data.reflections.map((r) => (
+            <p key={r.id}>
+              相关复盘：
+              <Link to={"/next?tab=reflections&item=" + r.id}>{r.title}</Link>
+            </p>
+          ))}
+        </>
+      )}
+    </section>
   );
 }
