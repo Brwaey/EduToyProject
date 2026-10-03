@@ -34,11 +34,18 @@ export default defineConfig({
   ],
   webServer: [
     {
+      command:
+        "../backend/.venv/bin/python ../backend/tests/mock_model_server.py --port 8099",
+      url: "http://127.0.0.1:8099",
+      reuseExistingServer: false,
+    },
+    {
       command: "../backend/.venv/bin/python ../backend/run.py",
       url: "http://127.0.0.1:8001/api/v1/health/ready",
       reuseExistingServer: false,
       env: {
         EDUTOY_DB_PATH: database,
+        EDUTOY_AI_KEY_PATH: database + ".key",
         EDUTOY_PORT: "8001",
         EDUTOY_ORIGINS: "http://127.0.0.1:5174",
       },

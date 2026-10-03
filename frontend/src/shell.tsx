@@ -24,6 +24,9 @@ import { api, ApiError, setCsrf, type Auth, type Project } from "./api";
 import { Reauthenticate } from "./auth";
 import { ErrorNotice, Loading } from "./common";
 import { ProjectManager } from "./projects";
+const AISettings = lazy(() => import("./ai-settings"));
+const AIInbox = lazy(() => import("./ai-inbox"));
+const AICreate = lazy(() => import("./ai-create"));
 const RecordsPage = lazy(() =>
   import("./records").then((module) => ({ default: module.RecordsPage })),
 );
@@ -178,11 +181,24 @@ export function App() {
             </button>
           </div>
           <ErrorNotice error={logoutError} />
+          <Link to="/settings/model">模型设置</Link>
           <p>每一次认真思考，都有迹可循。</p>
         </div>
       </aside>
       <main className="main-content">
-        {onRecords ? (
+        {location.pathname === "/settings/model" ? (
+          <Suspense fallback={<Loading />}>
+            <AISettings />
+          </Suspense>
+        ) : location.pathname === "/records/ai/new" ? (
+          <Suspense fallback={<Loading />}>
+            <AICreate />
+          </Suspense>
+        ) : location.pathname === "/records/ai" ? (
+          <Suspense fallback={<Loading />}>
+            <AIInbox projects={projects.data || []} />
+          </Suspense>
+        ) : onRecords ? (
           <Suspense fallback={<Loading />}>
             <RecordsPage projects={projects.data || []} />
           </Suspense>

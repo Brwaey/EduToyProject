@@ -625,6 +625,7 @@ export function HistoryPanel({ path }: { path: string }) {
     review: "复核",
     complete: "结项",
     reopen: "重新开启",
+    ai_accept: "采纳 AI 建议",
   };
   return (
     <section className="m2-history">
@@ -639,6 +640,13 @@ export function HistoryPanel({ path }: { path: string }) {
               第 {r.version} 版 · {ops[r.operation] || r.operation} ·{" "}
               {time(r.created_at)}
             </summary>
+            {typeof r.snapshot.ai_suggestion_id === "string" && (
+              <Link
+                to={"/records/ai?suggestion=" + r.snapshot.ai_suggestion_id}
+              >
+                查看此次 AI 建议与采纳依据
+              </Link>
+            )}
             <SnapshotView value={r.snapshot} />
           </details>
         ))

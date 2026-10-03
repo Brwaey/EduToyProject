@@ -106,6 +106,10 @@ export function RecordsPage({ projects }: { projects: Project[] }) {
           </Link>
         </div>
       </header>
+      <nav className="tabs" aria-label="科研记录页签">
+        <span className="active">全部记录</span>
+        <Link to="/records/ai">AI 收件箱</Link>
+      </nav>
       <section className="record-workspace">
         <div className="record-browser">
           <div className="browser-top">
@@ -611,6 +615,16 @@ function RecordDetail({ id, projects }: { id: string; projects: Project[] }) {
         </div>
       </div>
       <h2 className="record-title">{r.title}</h2>
+      {!r.deleted_at && !archived && (
+        <div className="inline-actions">
+          <Link to={"/records/ai/new?kind=record_draft&record=" + r.id}>
+            AI 整理
+          </Link>
+          <Link to={"/records/ai/new?kind=relation_suggestions&record=" + r.id}>
+            AI 建议关联
+          </Link>
+        </div>
+      )}
       <div className="metadata">
         <span>
           <Folder size={14} />
@@ -711,6 +725,7 @@ function History({ id }: { id: string }) {
     restore: "恢复记录",
     source_add: "追加来源",
     source_revise: "修订来源",
+    ai_accept: "采纳 AI 整理",
   };
   return (
     <div className="history">
@@ -718,6 +733,7 @@ function History({ id }: { id: string }) {
       {history.data?.map((revision) => {
         const snap = revision.snapshot as unknown as RecordData & {
           source_version_ids: string[];
+          ai_suggestion_id?: string;
         };
         return (
           <details key={revision.id}>
@@ -729,6 +745,11 @@ function History({ id }: { id: string }) {
               <time>{time(revision.created_at)}</time>
             </summary>
             <div className="history-body">
+              {snap.ai_suggestion_id && (
+                <Link to={"/records/ai?suggestion=" + snap.ai_suggestion_id}>
+                  查看此次 AI 建议与采纳依据
+                </Link>
+              )}
               <h3>{snap.title}</h3>
               <p className="small muted">
                 {recordTypes[snap.record_type]} · {workStates[snap.work_status]}{" "}

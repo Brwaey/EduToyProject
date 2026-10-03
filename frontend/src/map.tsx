@@ -634,7 +634,11 @@ export default function MapPage({ projects }: { projects: Project[] }) {
                     }}
                   />
                 </details>
-                {!selectedNow && <RelationsPanel />}
+                {!selectedNow && (
+                  <RelationsPanel
+                    relationId={params.get("relation") || undefined}
+                  />
+                )}
               </div>
               {(selectedNow || deletedItem) && (
                 <aside className="map-details">
@@ -753,3 +757,7 @@ export default function MapPage({ projects }: { projects: Project[] }) {
     </section>
   );
 }
+<div className="inline-actions">
+  <Link to="/records/ai/new?kind=relation_suggestions">AI 建议关联</Link>
+  <Link to="/records/ai">AI 收件箱</Link>
+</div>;

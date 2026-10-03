@@ -381,10 +381,12 @@ export function RelationEditor({
   );
 }
 export function RelationsPanel({
+  relationId,
   node,
   onCreate,
 }: {
   node?: GraphNodeData;
+  relationId?: string;
   onCreate?: () => void;
 }) {
   const client = useQueryClient(),
@@ -399,8 +401,20 @@ export function RelationsPanel({
   });
   if (node) params.set("node_id", node.id);
   const query = useQuery({
-    queryKey: ["m2", "relations", params.toString()],
-    queryFn: () => api<Page<Relation>>("/relations?" + params),
+    queryKey: ["m2", "relations", params.toString(), relationId],
+    queryFn: async () =>
+      relationId
+        ? {
+            items: [
+              await api<Relation>(
+                "/relations/" + relationId + "?include_deleted=true",
+              ),
+            ],
+            total: 1,
+            page: 1,
+            page_size: 20,
+          }
+        : api<Page<Relation>>("/relations?" + params),
   });
   async function mutate(
     r: Relation,
@@ -449,7 +463,11 @@ export function RelationsPanel({
         <Loading />
       ) : (
         query.data?.items.map((r) => (
-          <details className="relation-card" key={r.id}>
+          <details
+            className="relation-card"
+            key={r.id}
+            open={relationId ? true : undefined}
+          >
             <summary>
               {r.source?.title || "起点已删除"}{" "}
               <b>{relationTypes[r.relation_type]}</b>{" "}
