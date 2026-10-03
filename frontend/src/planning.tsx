@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ActionDetail, ActionEditor } from "./actions";
 import { api, type Project } from "./api";
 import { ErrorNotice, Loading, Options } from "./common";
@@ -115,6 +115,9 @@ export default function NextPage({ projects }: { projects: Project[] }) {
           <p>保留选择的理由，把想法变成一次具体行动。</p>
         </div>
         <div className="inline-actions">
+          {tab === "actions" && (
+            <Link to="/records/ai/new?kind=action_candidates">AI 建议行动</Link>
+          )}
           {tab === "reflections" && (
             <button
               onClick={() => {

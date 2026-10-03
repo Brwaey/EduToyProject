@@ -1,3 +1,4 @@
+import { PlanningLink, AdoptionPanel } from "./ai-adoption";
 import { FixedMaterial, GrowthContext } from "./growth-shared";
 import { growthPath, type GrowthObject, type GrowthMaterial } from "./growth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -658,6 +659,8 @@ export function ActionDetail({
         <button onClick={onClose}>关闭详情</button>
       </div>
       <h2>{a.title}</h2>
+      {!a.deleted_at && !a.archived && <PlanningLink kind="action" id={a.id} />}
+      <AdoptionPanel values={a.ai_adoptions || []} />
       {a.growth_origin && (
         <section>
           <h3>发起这次行动的贡献／成长</h3>

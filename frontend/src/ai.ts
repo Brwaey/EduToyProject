@@ -7,8 +7,10 @@ export type AISelection = components["schemas"]["Selection"];
 export type AIPick = components["schemas"]["MaterialPick"];
 export type Citation = components["schemas"]["Citation"];
 export type AIRelation = components["schemas"]["RelationCandidate"];
-export type AIKind =
-  "record_draft" | "relation_suggestions" | "contribution_candidates";
+export type AIKind = Exclude<
+  components["schemas"]["TaskOut"]["kind"],
+  "connection_test"
+>;
 export type FieldName =
   | "title"
   | "record_type"
@@ -40,6 +42,8 @@ export const taskKinds: Record<string, string> = {
   relation_suggestions: "地图关系建议",
   connection_test: "连接测试",
   contribution_candidates: "贡献候选",
+  action_candidates: "行动建议",
+  reflection_draft: "周复盘整理",
 };
 export function endpointPreview(url: string) {
   const s = url.trim().replace(/\/+$/, "");

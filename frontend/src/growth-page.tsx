@@ -1,3 +1,4 @@
+import { PlanningLink } from "./ai-adoption";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -519,6 +520,12 @@ function GrowthDetail({
         <button onClick={onClose}>关闭详情</button>
       </div>
       <h2>{o.title}</h2>
+      {!o.deleted_at && !o.archived && (
+        <PlanningLink
+          kind={o.kind === "contribution" ? "contribution" : "growth_entry"}
+          id={o.id}
+        />
+      )}
       <p>
         {o.occurred_on} ·{" "}
         {projects.find((p) => p.id === o.project_id)?.name || "未归类"}

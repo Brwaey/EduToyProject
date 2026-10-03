@@ -1,3 +1,4 @@
+import { PlanningLink, AdoptionPanel, ExportLink } from "./ai-adoption";
 import { GrowthContext, MaterialContent } from "./growth-shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -420,6 +421,25 @@ export function ReflectionDetail({
         <button onClick={onClose}>关闭详情</button>
       </div>
       <h2>{r.title}</h2>
+      <div className="inline-actions">
+        <ExportLink kind="reflection" id={r.id} />
+        {!r.deleted_at && !r.archived && (
+          <>
+            <PlanningLink kind="reflection" id={r.id} />
+            {r.kind === "period" && (
+              <Link
+                to={
+                  "/records/ai/new?kind=reflection_draft&object_kind=reflection&object=" +
+                  r.id
+                }
+              >
+                AI 辅助整理
+              </Link>
+            )}
+          </>
+        )}
+      </div>
+      <AdoptionPanel values={r.ai_adoptions || []} />
       {!r.deleted_at && (
         <GrowthContext kind="reflection" id={r.id} readonly={r.archived} />
       )}

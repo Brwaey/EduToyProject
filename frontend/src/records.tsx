@@ -1,3 +1,4 @@
+import { PlanningLink, ExportLink } from "./ai-adoption";
 import { GrowthContext } from "./growth-shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -648,6 +649,10 @@ function RecordDetail({ id, projects }: { id: string; projects: Project[] }) {
         <div className="notice">记录已删除，可恢复后继续查看来源和编辑。</div>
       )}
       <ErrorNotice error={error} />
+      <div className="inline-actions">
+        <ExportLink kind="record" id={r.id} />
+        {!r.deleted_at && !archived && <PlanningLink kind="record" id={r.id} />}
+      </div>
       <div className="tabs" role="tablist" aria-label="记录详情">
         {[
           ["record", "探索记录"],

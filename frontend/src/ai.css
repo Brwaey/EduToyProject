@@ -152,6 +152,10 @@
 .ai-card {
   max-width: 100%;
 }
+.export-fields {
+  width: 100%;
+  box-sizing: border-box;
+}
 .ai-card p,
 .ai-card label {
   min-width: 0;

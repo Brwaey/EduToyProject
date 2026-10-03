@@ -1,4 +1,5 @@
 import AIContributionReview from "./ai-contribution";
+import AIPlanningReview from "./ai-planning-review";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
@@ -71,6 +72,7 @@ export default function AIInbox({ projects }: { projects: Project[] }) {
         </div>
         <div className="inline-actions">
           <Link to="/settings/model">模型设置</Link>
+          <Link to="/records/ai/new?kind=action_candidates">建议行动</Link>
           <Link to="/records/ai/new?kind=contribution_candidates">
             寻找贡献候选
           </Link>
@@ -229,10 +231,15 @@ function Materials({ task }: { task: AITask }) {
   return (
     <details className="ai-materials">
       <summary>查看当时发送的材料与版本</summary>
+      {!!task.parameters?.goal && <p>目标：{String(task.parameters.goal)}</p>}
+      {!!task.parameters?.constraints && (
+        <p>限制：{String(task.parameters.constraints)}</p>
+      )}
       {task.inputs.objects.map((o) => (
         <p key={o.key}>
           {o.key} · {o.title} · 当时 v{o.version}／当前 v{o.current_version}
           {o.archived ? " · 已归档" : ""}
+          {o.evidence_label ? " · " + o.evidence_label : ""}
         </p>
       ))}
       {task.inputs.materials.map((m) => (
@@ -354,6 +361,9 @@ function TaskDetail({
         t.kind === "relation_suggestions" &&
         !t.suggestion_ids.length && <p>未找到有充分依据的关系建议。</p>}
       {t.status === "succeeded" &&
+        t.kind === "action_candidates" &&
+        !t.suggestion_ids.length && <p>暂无足够依据提出具体行动。</p>}
+      {t.status === "succeeded" &&
         t.kind === "contribution_candidates" &&
         !t.suggestion_ids.length && <p>未找到依据充分的贡献候选。</p>}
       <ErrorNotice error={error} />
@@ -372,7 +382,14 @@ function SuggestionDetail({ id }: { id: string }) {
         <Loading />
       ) : (
         query.data &&
-        (query.data.kind === "contribution_candidates" ? (
+        (["action_candidates", "reflection_draft"].includes(query.data.kind) ? (
+          <AIPlanningReview
+            key={query.data.id}
+            s={query.data}
+            refresh={() => query.refetch()}
+            materials={<Materials task={query.data.task} />}
+          />
+        ) : query.data.kind === "contribution_candidates" ? (
           <AIContributionReview
             s={query.data}
             refresh={() => query.refetch()}

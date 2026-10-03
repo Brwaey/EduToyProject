@@ -23,10 +23,10 @@ export class ApiError extends Error {
     super(message);
   }
 }
-export async function api<T>(
+async function request(
   path: string,
   options: RequestInit = {},
-): Promise<T> {
+): Promise<Response> {
   const headers = new Headers(options.headers);
   if (options.body && !(options.body instanceof FormData))
     headers.set("Content-Type", "application/json");
@@ -51,7 +51,20 @@ export async function api<T>(
       result.error?.message || "请求失败，请稍后重试",
     );
   }
+  return response;
+}
+export async function api<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await request(path, options);
   return response.status === 204 ? (undefined as T) : response.json();
+}
+export async function apiBlob(
+  path: string,
+  options: RequestInit,
+): Promise<Blob> {
+  return (await request(path, options)).blob();
 }
 export function json(method: string, body: unknown): RequestInit {
   return { method, body: JSON.stringify(body) };

@@ -1,3 +1,4 @@
+import { PlanningLink } from "./ai-adoption";
 import { GrowthContext } from "./growth-shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type FormEvent } from "react";
@@ -584,6 +585,9 @@ export function ItemDetail({
         {onClose && <button onClick={onClose}>关闭详情</button>}
       </div>
       <h2>{i.title}</h2>
+      {!i.deleted_at && !i.archived && (
+        <PlanningLink kind="research_item" id={i.id} />
+      )}
       {i.kind === "question" && !i.deleted_at && (
         <GrowthContext kind="research_item" id={i.id} readonly={i.archived} />
       )}

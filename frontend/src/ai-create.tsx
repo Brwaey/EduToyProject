@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import AIPlanningCreate from "./ai-planning-create";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api, json, fieldLabels, type RecordData, type Source } from "./api";
@@ -20,6 +21,15 @@ type Choice = {
   options: { key: string; label: string; pick: AIPick; text: string }[];
 };
 export default function AICreate() {
+  const [params] = useSearchParams();
+  const kind = params.get("kind");
+  return kind === "action_candidates" || kind === "reflection_draft" ? (
+    <AIPlanningCreate key={params.toString()} kind={kind} />
+  ) : (
+    <LegacyAICreate />
+  );
+}
+function LegacyAICreate() {
   const [params] = useSearchParams(),
     navigate = useNavigate();
   const kind: AIKind =

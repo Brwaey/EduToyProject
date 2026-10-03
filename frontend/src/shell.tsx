@@ -25,6 +25,7 @@ import { Reauthenticate } from "./auth";
 import { ErrorNotice, Loading } from "./common";
 import { ProjectManager } from "./projects";
 const AISettings = lazy(() => import("./ai-settings"));
+const ExportPage = lazy(() => import("./export-page"));
 const AIInbox = lazy(() => import("./ai-inbox"));
 const AICreate = lazy(() => import("./ai-create"));
 const RecordsPage = lazy(() =>
@@ -183,11 +184,16 @@ export function App() {
           </div>
           <ErrorNotice error={logoutError} />
           <Link to="/settings/model">模型设置</Link>
+          <Link to="/settings/export">数据导出</Link>
           <p>每一次认真思考，都有迹可循。</p>
         </div>
       </aside>
       <main className="main-content">
-        {location.pathname === "/settings/model" ? (
+        {location.pathname === "/settings/export" ? (
+          <Suspense fallback={<Loading />}>
+            <ExportPage key={location.search} projects={projects.data || []} />
+          </Suspense>
+        ) : location.pathname === "/settings/model" ? (
           <Suspense fallback={<Loading />}>
             <AISettings />
           </Suspense>

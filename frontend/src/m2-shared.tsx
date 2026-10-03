@@ -1,3 +1,4 @@
+import { AdoptionPanel } from "./ai-adoption";
 import { MaterialContent, FixedMaterial } from "./growth-material";
 import type { GrowthMaterial } from "./growth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -604,7 +605,19 @@ export function SnapshotView({ value }: { value: Record<string, unknown> }) {
               <summary>
                 结果记录：{r.title} · 第 {r.version} 版
               </summary>
-              {!r.deleted && r.snapshot && <SnapshotView value={r.snapshot} />}
+              {!r.deleted && r.snapshot && (
+                <>
+                  <SnapshotView value={r.snapshot} />
+                  <AdoptionPanel
+                    values={
+                      (r.snapshot.ai_adoptions || []) as Record<
+                        string,
+                        unknown
+                      >[]
+                    }
+                  />
+                </>
+              )}
             </details>
           ),
         )}
@@ -655,7 +668,14 @@ export function HistoryPanel({ path }: { path: string }) {
                 查看此次 AI 建议与采纳依据
               </Link>
             )}
-            <SnapshotView value={r.snapshot} />
+            <>
+              <SnapshotView value={r.snapshot} />
+              <AdoptionPanel
+                values={
+                  (r.snapshot.ai_adoptions || []) as Record<string, unknown>[]
+                }
+              />
+            </>
           </details>
         ))
       )}
