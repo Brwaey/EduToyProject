@@ -39,16 +39,44 @@ class Handler(BaseHTTPRequestHandler):
         else:
             data = json.loads(payload["messages"][-1]["content"])
             material = next(
-                m
-                for m in data["materials"]
-                if next(o for o in data["objects"] if o["key"] == m["object_key"])["kind"]
-                == "record"
+                (
+                    m
+                    for m in data["materials"]
+                    if next(o for o in data["objects"] if o["key"] == m["object_key"])["kind"]
+                    == "record"
+                ),
+                data["materials"][0],
             )
             quote = material["text"][:40]
             cite = {"material": material["key"], "quote": quote, "occurrence": 1}
             if model == "badcite":
                 cite["quote"] = "这句话并不存在于所选材料"
-            if "整理已有探索卡" in payload["messages"][0]["content"]:
+            if "未来行动建议" in payload["messages"][0]["content"]:
+                candidate = {
+                    "title": "补充一次对照",
+                    "research_goal": "检验评估设置的影响",
+                    "learning_goal": "练习实验设计",
+                    "completion_criteria": "对比两组设置并记录差异",
+                    "effort": "建议预留一小时，实际待确认",
+                    "reason": "已有材料提示仍需检查条件",
+                    "uncertainty": "能否获得数据尚待确认",
+                    "citations": [cite],
+                }
+                content = {
+                    "actions": []
+                    if model == "empty-actions"
+                    else [candidate] * (6 if model == "too-many-actions" else 1)
+                }
+            elif "辅助整理已保存的周期复盘" in payload["messages"][0]["content"]:
+                content = {
+                    "fields": {
+                        "progress": {"value": quote, "citations": [cite]},
+                        "blockers": {"value": "仍需核对条件", "citations": [cite]},
+                        "next_steps": {"value": "建议继续核对条件", "citations": [cite]},
+                    },
+                    "questions": ["是否需要补充其他条件？"],
+                }
+            elif "整理已有探索卡" in payload["messages"][0]["content"]:
                 content = {
                     "fields": {
                         "title": {"value": "整理后的实验记录", "citations": [cite]},
