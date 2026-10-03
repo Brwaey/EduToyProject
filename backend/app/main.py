@@ -51,7 +51,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title="研迹 API",
-        version="0.3.0",
+        version="0.4.0",
         lifespan=lifespan,
         responses={
             status: {"model": ErrorOut}
@@ -159,4 +159,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from .api_ai import router as ai_router
 
     app.include_router(ai_router)
+    from .api_growth import router as growth_router
+
+    app.include_router(growth_router)
     return app

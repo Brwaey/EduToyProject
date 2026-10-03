@@ -5,9 +5,12 @@ from uuid import UUID
 from pydantic import Field, field_validator, model_validator
 
 from .schemas import Input, VersionInput
+from .schemas_growth import ContributionInput, ContributionType
 from .schemas_m2 import RelationType
 
-TaskKind = Literal["record_draft", "relation_suggestions", "connection_test"]
+TaskKind = Literal[
+    "record_draft", "relation_suggestions", "contribution_candidates", "connection_test"
+]
 DraftField = Literal[
     "title",
     "record_type",
@@ -101,7 +104,7 @@ class Selection(Input):
 
 
 class PreviewInput(Input):
-    kind: Literal["record_draft", "relation_suggestions"]
+    kind: Literal["record_draft", "relation_suggestions", "contribution_candidates"]
     objects: list[Selection] = Field(min_length=1, max_length=20)
 
 
@@ -163,11 +166,38 @@ class RelationsOutput(Input):
     relations: list[RelationCandidate] = Field(max_length=10)
 
 
+ContributionField = Literal["title", "personal_role", "reason", "ai_help", "others_help", "impact"]
+
+
+class ContributionCandidate(Input):
+    contribution_type: ContributionType
+    fields: dict[ContributionField, FieldSuggestion]
+    uncertainty: str = Field(default="", max_length=20000)
+    questions: list[str] = Field(default_factory=list, max_length=20)
+
+    @model_validator(mode="after")
+    def valid(self):
+        if (
+            "title" not in self.fields
+            or not self.fields["title"].value.strip()
+            or len(self.fields["title"].value) > 200
+        ):
+            raise ValueError("贡献候选需要一句话标题")
+        if any(f.value.strip() and not f.citations for f in self.fields.values()):
+            raise ValueError("贡献事实字段需要原文引用")
+        return self
+
+
+class ContributionsOutput(Input):
+    contributions: list[ContributionCandidate] = Field(max_length=10)
+
+
 class AcceptInput(VersionInput):
     current_versions: dict[str, int]
     reviewed: bool = False
     fields: dict[DraftField, str] | None = None
     relation: RelationCandidate | None = None
+    contribution: ContributionInput | None = None
 
 
 class BatchReject(Input):
@@ -244,6 +274,8 @@ class SuggestionOut(Input):
     record_revision_id: str | None
     relation_id: str | None
     relation_revision_id: str | None
+    contribution_id: str | None = None
+    contribution_revision_id: str | None = None
     created_at: str
     decided_at: str | None
     events: list[dict]

@@ -8,6 +8,7 @@ from sqlalchemy import func, select, update
 from . import m2_commands, records
 from .ai_credentials import decrypt
 from .ai_data import input_rows, inputs_view, select_inputs, validate_relation
+from .ai_prompts import prompt_version
 from .db import now
 from .m2_common import owned
 from .models import Record, RecordRevision
@@ -82,6 +83,7 @@ def create_task(db, settings, owner, value, kind=None, parent=None):
         request_id=str(value.request_id),
         request_hash=digest,
         kind=kind,
+        prompt_version=prompt_version(kind),
         config_version=config.version,
         endpoint=config.endpoint,
         model=config.model,
@@ -153,7 +155,7 @@ def accept(db, owner, suggestion, value):
         raise Problem(409, "ai_review_required", "材料已更新，请核对旧依据仍适用后确认")
     modified = False
     if suggestion.kind == "record_draft":
-        if not value.fields or value.relation:
+        if not value.fields or value.relation or value.contribution:
             raise Problem(422, "invalid_acceptance", "请至少选择一个整理字段")
         original = suggestion.original["fields"]
         record = owned(db, Record, owner, task.target_record_id)
@@ -188,8 +190,8 @@ def accept(db, owner, suggestion, value):
                 k: suggestion.original["evidence_by_field"][k] for k in value.fields
             },
         }
-    else:
-        if not value.relation or value.fields is not None:
+    elif suggestion.kind == "relation_suggestions":
+        if not value.relation or value.fields is not None or value.contribution:
             raise Problem(422, "invalid_acceptance", "请填写要采纳的关系")
         validated = validate_relation(db, rows, value.relation)
         modified = any(
@@ -218,6 +220,56 @@ def accept(db, owner, suggestion, value):
         suggestion.relation_id = relation.id
         suggestion.relation_revision_id = rev.id
         suggestion.accepted = validated
+    elif suggestion.kind == "contribution_candidates":
+        from .growth_commands import contribution_save
+        from .growth_data import latest_revision
+        from .schemas_growth import ContributionCreate
+
+        if not value.contribution or value.fields is not None or value.relation:
+            raise Problem(422, "invalid_acceptance", "请填写贡献并确认本人参与")
+        payload = value.contribution.model_dump(mode="json")
+        allowed = {json.dumps(e, sort_keys=True) for e in suggestion.original["evidence"]}
+        if not payload["evidence"] or any(
+            json.dumps(e, sort_keys=True) not in allowed for e in payload["evidence"]
+        ):
+            raise Problem(422, "ai_invalid_citation", "请保留本次候选中至少一项有效依据")
+        supplemented = []
+        for key in ("title", "personal_role", "reason", "ai_help", "others_help", "impact"):
+            original = suggestion.original["fields"].get(key, {}).get("value", "")
+            final = payload["title"] if key == "title" else payload["details"].get(key, "")
+            if final != original:
+                supplemented.append(key)
+        if payload["details"].get("next_steps"):
+            supplemented.append("next_steps")
+        modified = (
+            bool(supplemented)
+            or payload["contribution_type"] != suggestion.original["contribution_type"]
+            or len(payload["evidence"]) != len(allowed)
+        )
+        contribution = contribution_save(
+            db,
+            owner,
+            ContributionCreate(request_id=suggestion.id, **payload),
+            operation="ai_accept",
+            extra={"ai_suggestion_id": suggestion.id, "user_supplement_fields": supplemented},
+        )
+        # Explicit review acknowledges current versions without replacing fixed evidence.
+        if stale:
+            from .growth_data import evidence_dict, evidence_rows, evidence_target
+
+            for row in evidence_rows(db, contribution):
+                _, source, _ = evidence_target(db, owner, evidence_dict(row))
+                row.reviewed_version = source.version
+            rev = latest_revision(db, contribution)
+            rev.snapshot = {
+                **rev.snapshot,
+                "evidence": [evidence_dict(e) for e in evidence_rows(db, contribution)],
+            }
+        suggestion.contribution_id = contribution.id
+        suggestion.contribution_revision_id = latest_revision(db, contribution).id
+        suggestion.accepted = {**payload, "user_supplement_fields": supplemented}
+    else:
+        raise Problem(422, "ai_task_kind", "不支持的 AI 建议类型")
     if stale:
         db.add(
             AISuggestionEvent(
@@ -233,7 +285,11 @@ def accept(db, owner, suggestion, value):
         AISuggestionEvent(
             suggestion_id=suggestion.id,
             operation=suggestion.status,
-            details={"record_id": suggestion.record_id, "relation_id": suggestion.relation_id},
+            details={
+                "record_id": suggestion.record_id,
+                "relation_id": suggestion.relation_id,
+                "contribution_id": suggestion.contribution_id,
+            },
         )
     )
     db.flush()

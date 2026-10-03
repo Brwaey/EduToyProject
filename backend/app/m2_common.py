@@ -85,6 +85,16 @@ def freeze(db, obj, operation, extra=None):
             columns(r)
             for r in db.scalars(select(ActionRecord).where(ActionRecord.action_id == obj.id))
         ]
+        from .models_growth import GrowthActionLink, GrowthRevision
+
+        link = db.get(GrowthActionLink, obj.id)
+        if link:
+            origin = db.get(GrowthRevision, link.revision_id)
+            value["growth_origin"] = {
+                "kind": "contribution" if origin.contribution_id else "growth_entry",
+                "id": origin.contribution_id or origin.entry_id,
+                "revision_id": origin.id,
+            }
     if extra:
         value.update(extra)
     rev = Revision(
@@ -168,6 +178,10 @@ def node_object(db, owner, node_id, deleted=False):
 
 
 def revision_for(db, owner, kind, object_id, revision_id):
+    if kind in ("contribution", "growth_entry"):
+        from .growth_data import revision
+
+        return revision(db, owner, kind, object_id, revision_id)
     obj = owned(db, MODELS[kind], owner, object_id, deleted=True)
     rev = db.get(RecordRevision if kind == "record" else Revision, str(revision_id))
     key = "record_id" if kind == "record" else REV_KEYS[type(obj)]
@@ -273,6 +287,10 @@ def evidence_view(db, owner, data):
 
 
 def material_view(db, owner, ref):
+    if ref["kind"] in ("contribution", "growth_entry"):
+        from .growth_data import material_view as growth_material
+
+        return growth_material(db, owner, ref["kind"], ref["id"], ref["revision_id"])
     obj, rev = revision_for(db, owner, ref["kind"], ref["id"], ref["revision_id"])
     return {
         **ref,
@@ -289,7 +307,9 @@ def redact_snapshot(db, owner, value):
         value["evidence"] = [evidence_view(db, owner, e) for e in value["evidence"]]
     if "results" in value:
         value["results"] = [result_view(db, owner, r) for r in value["results"]]
-    # Material references always point to record/action/item, so no reflection recursion.
+    # Growth materials project one layer; nested references are opened on demand.
+    if value.get("growth_origin"):
+        value["growth_origin"] = material_view(db, owner, value["growth_origin"])
     if "materials" in value:
         value["materials"] = [material_view(db, owner, r) for r in value["materials"]]
     return value
@@ -357,6 +377,20 @@ def object_view(db, obj):
         )
         value["archived"] = any(v and v["archived"] for v in (value["source"], value["target"]))
     if isinstance(obj, Action):
+        from .growth_data import material_view as growth_material
+        from .models_growth import GrowthActionLink, GrowthRevision
+
+        link = db.get(GrowthActionLink, obj.id)
+        value["growth_origin"] = None
+        if link:
+            rev = db.get(GrowthRevision, link.revision_id)
+            value["growth_origin"] = growth_material(
+                db,
+                owner,
+                "contribution" if rev.contribution_id else "growth_entry",
+                rev.contribution_id or rev.entry_id,
+                rev.id,
+            )
         direction = db.get(ResearchItem, obj.direction_id) if obj.direction_id else None
         value["direction_title"] = (
             ("方向已删除" if direction.deleted_at else direction.title) if direction else None

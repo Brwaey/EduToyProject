@@ -338,6 +338,9 @@ def materials(db, owner, start_at, end_at, project_id=None, q="", page=1, page_s
                     material_view(db, owner, {"kind": kind, "id": obj.id, "revision_id": rev.id}),
                 )
             )
+    from .growth_queries import period_materials
+
+    result.extend(period_materials(db, owner, start_at, end_at, project_id, q))
     result.sort(key=lambda v: (v[0], v[1]["id"]), reverse=True)
     return {
         "items": [v[1] for v in result[(page - 1) * page_size : page * page_size]],

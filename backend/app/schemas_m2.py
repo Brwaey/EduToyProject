@@ -208,7 +208,7 @@ class ReopenInput(VersionInput):
 
 
 class MaterialRef(Input):
-    kind: Literal["record", "action", "research_item"]
+    kind: Literal["record", "action", "research_item", "contribution", "growth_entry"]
     id: UUID
     revision_id: UUID
 
@@ -358,6 +358,7 @@ class ResultOut(BaseModel):
 
 
 class ActionOut(VersionedOut):
+    growth_origin: dict | None = None
     title: str
     project_id: str | None
     direction_id: str | None
@@ -372,6 +373,9 @@ class ActionOut(VersionedOut):
 
 
 class MaterialOut(BaseModel):
+    occurred_on: str | None = None
+    archived: bool = False
+    needs_review: bool = False
     kind: str
     id: str
     revision_id: str

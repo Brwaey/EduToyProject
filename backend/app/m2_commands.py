@@ -281,6 +281,10 @@ def reflection_save(db, owner, value, reflection_id=None):
     previous = owned(db, Reflection, owner, reflection_id) if reflection_id else None
     for ref in value.materials:
         obj, _ = revision_for(db, owner, ref.kind, ref.id, ref.revision_id)
+        if ref.kind in ("contribution", "growth_entry") and not (
+            previous and ref.model_dump(mode="json") in previous.materials
+        ):
+            writable(db, obj)
         if obj.deleted_at and not (previous and ref.model_dump(mode="json") in previous.materials):
             raise Problem(409, "source_deleted", "已删除内容不能加入复盘")
     data = value.model_dump(mode="json", exclude={"request_id", "expected_version"})

@@ -8,7 +8,7 @@ from .m2_common import evidence_content, owned, writable
 from .models import Project, Record, RecordRevision, Source, SourceVersion
 from .models_ai import AISuggestion, AISuggestionEvent, AITaskInput
 from .models_m2 import ResearchItem, Revision
-from .schemas_ai import DraftOutput, RelationsOutput
+from .schemas_ai import ContributionsOutput, DraftOutput, RelationsOutput
 from .security import Problem
 
 FIELDS = ("context", "actions", "collaboration", "observations", "interpretation", "next_steps")
@@ -54,6 +54,8 @@ def select_inputs(db, owner, value):
         len(value.objects) < 2 or not any(o.kind == "record" for o in value.objects)
     ):
         raise Problem(422, "invalid_selection", "请选择至少两个对象，其中包含一条科研记录")
+    if value.kind == "contribution_candidates" and any(o.kind != "record" for o in value.objects):
+        raise Problem(422, "invalid_selection", "贡献候选只分析科研记录及其原始材料")
     seen, rows = set(), []
     for index, selection in enumerate(value.objects):
         identity = (selection.kind, str(selection.id))
@@ -234,6 +236,8 @@ def suggestion_view(db, suggestion, task):
             "record_revision_id",
             "relation_id",
             "relation_revision_id",
+            "contribution_id",
+            "contribution_revision_id",
             "created_at",
             "decided_at",
         )
@@ -319,6 +323,34 @@ def validate_output(db, task, text):
             for k, f in value.fields.items()
         }
         return [{**value.model_dump(), "evidence_by_field": evidence}]
+    if task.kind == "contribution_candidates":
+        value = ContributionsOutput.model_validate(raw)
+        results = []
+        for candidate in value.contributions:
+            by_field = {
+                k: resolve_citations(db, rows, f.citations) for k, f in candidate.fields.items()
+            }
+            unique = {}
+            for refs in by_field.values():
+                for ref in refs:
+                    ref = {k: v for k, v in ref.items() if k != "stance"}
+                    ref["purpose"] = "context"
+                    from .schemas_growth import GrowthEvidenceInput
+
+                    ref = GrowthEvidenceInput.model_validate(ref).model_dump(mode="json")
+                    unique[json.dumps(ref, sort_keys=True)] = ref
+            if not unique or len(unique) > 50:
+                raise Problem(422, "ai_invalid_citation", "贡献需 1–50 项可定位依据")
+            results.append(
+                {
+                    **candidate.model_dump(),
+                    "evidence_by_field": by_field,
+                    "evidence": list(unique.values()),
+                }
+            )
+        return results
+    if task.kind != "relation_suggestions":
+        raise Problem(422, "ai_task_kind", "不支持的 AI 任务类型")
     value = RelationsOutput.model_validate(raw)
     seen = set()
     results = []
