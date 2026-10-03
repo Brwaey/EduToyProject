@@ -1,6 +1,6 @@
 # 全局架构与数据流
 
-版本：M3 · 2026-10-03 · 技术实现与验证基线
+版本：M4 · 2026-10-03 · 技术实现约定；M4 功能集中验证待执行
 
 [项目入口](../README.md) · [产品说明](PROJECT_OVERVIEW.md) · [进度记录](DEVELOPMENT_PROGRESS.md) · [功能测试](FUNCTIONAL_TESTS.md)
 
@@ -18,6 +18,8 @@ React/TypeScript/Vite 前端通过同源 `/api/v1` 访问 FastAPI。SQLAlchemy 2
 | --- | --- | --- |
 | 界面与路由 | `frontend/src/main.tsx`、`shell.tsx`、`auth.tsx`、`records.tsx`、`projects.tsx` | 账号、项目与记录页面；地图和规划按路由延迟加载 |
 | 地图与规划 | `map.tsx`、`research.tsx`、`planning.tsx`、`actions.tsx`、`reflections.tsx`、`m2-shared.tsx` | 画布/列表、方向、行动、复盘、共用证据与对象选择器 |
+| 贡献与成长 | `growth-page/editor/shared/material.tsx`、`api_growth.py`、`growth_commands/data/queries.py` | 三页签、固定引用/历史/复核、跨模块入口与行动来源 |
+| AI 贡献候选 | `ai-contribution.tsx`、`ai_prompts/data/commands.py` | 复用模型设置与任务，按类型校验及事务采纳 |
 | 请求与缓存 | `api.ts`、TanStack Query | Cookie 同源请求、内存 CSRF、错误展示、保存后的缓存更新 |
 | API 契约 | `backend/app/main.py`、`api_m1.py`、`api_m2.py`、`schemas*.py`、`openapi.json` | 请求校验、HTTP/错误映射、生成前端类型 |
 | 会话与归属 | `security.py`、`records.py` | 确定用户、校验所有者与父级对象、限制归档/删除对象 |
@@ -46,7 +48,7 @@ flowchart TD
     L --> A
 ```
 
-M1 实现身份、项目、记录、来源及历史。图谱引用业务对象，不复制正文；布局独立保存。M2 问题、发现、方向、关系、行动与复盘见第 9 节。后续贡献、成长继续引用固定来源版本，模型建议不能直接覆盖用户判断。
+M1 实现身份、项目、记录、来源及历史。图谱引用业务对象，不复制正文；布局独立保存。M2 问题、发现、方向、关系、行动与复盘见第 9 节。M3 模型流程见第 10 节，M4 贡献、成长见第 11 节，继续引用固定来源版本，模型建议不能直接覆盖用户判断。
 
 ## 3. M1 对象与关系
 
@@ -278,7 +280,7 @@ GraphNode 的 record/item 外键、EvidenceReference 的 item/relation 外键、
 
 ## 10. M3：模型配置、任务与候选采纳（已实施，真实接口验收待完成）
 
-M3 只整理已有探索卡、建议已有对象之间的关系。AI 规划、复盘生成与贡献成长仍待后续。每个账号维护一套 OpenAI Chat Completions 兼容配置：URL、模型名、API Key；URL 保留路径，仅在非完整地址后追加 `/chat/completions`，不追加 `/v1`，不跟随重定向。HTTPS 云端与 HTTP 本机回环可用。
+M3 阶段整理已有探索卡、建议已有对象之间的关系；M4 增量贡献候选见第 11 节。AI 规划与复盘生成仍待后续。每个账号维护一套 OpenAI Chat Completions 兼容配置：URL、模型名、API Key；URL 保留路径，仅在非完整地址后追加 `/chat/completions`，不追加 `/v1`，不跟随重定向。HTTPS 云端与 HTTP 本机回环可用。
 
 ```mermaid
 flowchart TD
