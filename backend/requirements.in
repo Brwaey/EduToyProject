@@ -8,3 +8,4 @@ python-multipart
 pytest
 httpx
 ruff
+cryptography

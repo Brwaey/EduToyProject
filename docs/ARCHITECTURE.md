@@ -8,7 +8,7 @@
 
 ## 1. 系统边界
 
-React/TypeScript/Vite 前端通过同源 `/api/v1` 访问 FastAPI。SQLAlchemy 2 使用 Python sqlite3 驱动保存本地数据，Alembic 管理表结构。本地运行不依赖 Docker、数据库服务器或模型供应商。
+React/TypeScript/Vite 前端通过同源 `/api/v1` 访问 FastAPI。SQLAlchemy 2 使用 Python sqlite3 驱动保存本地数据，Alembic 管理表结构。本地运行不依赖 Docker 或数据库服务器；手动功能不依赖模型，M3 使用用户配置的兼容模型接口。
 
 每个后端实例使用一个 SQLite 文件；多账号以所有者字段隔离。不同电脑独立启动时有各自的数据；共享同一后端的账号访问同一文件中各自的数据。Git 仅同步代码、迁移、契约和文档。
 
@@ -71,7 +71,7 @@ erDiagram
 
 UUID 使用字符串，时间以 UTC 保存并通过带时区的 ISO 8601 输出，快照采用通用 JSON。工作状态为 `planned/in_progress/blocked/paused/finished`；结果判断为 `none/inconclusive/unsupported/preliminary/not_applicable`；类型为 `note/paper/experiment/ai/idea`。
 
-M2 新增研究内容、节点、关系、固定证据、行动、复盘、布局与修订表。未来的 AITask/Suggestion、Contribution/Skill/GrowthEntry 不创建空表，按对应里程碑迁移；继续沿用固定版本引用和显式确认。
+M2 新增研究内容、节点、关系、固定证据、行动、复盘、布局与修订表。M3 已增加 AIConfig/AITask/AITaskInput/AISuggestion/AISuggestionEvent；未来 Contribution/Skill/GrowthEntry 不创建空表，按对应里程碑迁移；继续沿用固定版本引用和显式确认。
 
 ## 4. 存储生命周期
 
@@ -144,7 +144,7 @@ API 前缀 `/api/v1`；规范来源为 FastAPI OpenAPI，前端通过脚本生�
 | M4 成长 | 探索卡与来源 → 用户确认的贡献 → 能力标签与成长实例 | 依据固定版本，用户确认归属，无自动贡献占比或能力总分 |
 | 行动与复盘 | 选择已有记录/关系/成长作为证据 → 方向与行动 → 新探索卡 | 调整只经正式业务接口，显式选择，不无声覆盖历史判断 |
 
-AI 任务仅能读取当前用户选择并有权访问的材料，固定输入版本；输出先校验字段和引用，再保存候选。采纳时核对输入仍有效，通过建议 ID 防重复写入，采纳与正式对象同事务保存。模型失败只改变任务状态，不阻止手动操作。AI 部分属于未来约定，当前没有模型调用或模拟 AI 输出。
+AI 任务仅能读取当前用户选择并有权访问的材料，固定输入版本；输出先校验字段和引用，再保存候选。采纳时核对输入仍有效，通过建议 ID 防重复写入，采纳与正式对象同事务保存。模型失败只改变任务状态，不阻止手动操作。M3 已实现手动选择材料后的真实兼容 API 调用；测试模拟服务独立于正式应用，详见第 10 节。
 
 ## 8. 开发与验证原则
 
@@ -154,7 +154,7 @@ AI 任务仅能读取当前用户选择并有权访问的材料，固定输入�
 
 ## 9. M2 研究地图与行动闭环
 
-本轮开放研究地图与下一步：问题 → 主动关联记录 → 发现 → 跨项目方向 → 行动 → 结果记录 → 手动复盘。AI 和成长仍留在 M3/M4。记录不自动入图，结项只要求一句结果说明。
+本轮开放研究地图与下一步：问题 → 主动关联记录 → 发现 → 跨项目方向 → 行动 → 结果记录 → 手动复盘。M3 的记录/关系 AI 见第 10 节，成长仍留在 M4。记录不自动入图，结项只要求一句结果说明。
 
 ```mermaid
 flowchart TD
@@ -273,3 +273,68 @@ GraphNode 的 record/item 外键、EvidenceReference 的 item/relation 外键、
 - 复盘保存成功后，创建行动或调整方向使用独立页面和业务命令；后续操作失败不撤销已保存复盘。
 
 实现参考：[React Flow](https://reactflow.dev/learn)、[Dagre 布局示例](https://reactflow.dev/examples/layout/dagre)、[Alembic SQLite 批处理](https://alembic.sqlalchemy.org/en/latest/batch.html)。
+
+## 10. M3：模型配置、任务与候选采纳（已实施，真实接口验收待完成）
+
+M3 只整理已有探索卡、建议已有对象之间的关系。AI 规划、复盘生成与贡献成长仍待后续。每个账号维护一套 OpenAI Chat Completions 兼容配置：URL、模型名、API Key；URL 保留路径，仅在非完整地址后追加 `/chat/completions`，不追加 `/v1`，不跟随重定向。HTTPS 云端与 HTTP 本机回环可用。
+
+```mermaid
+flowchart TD
+    A[账号配置] --> B[服务端加密 Key]
+    C[用户选择字段和材料] --> D[预览并固定版本]
+    D --> E[短事务保存任务]
+    B --> F[无数据库事务的模型请求]
+    E --> F
+    F --> G[结构与引用校验]
+    G --> H[持久化候选]
+    H --> I[用户对照修改采纳或拒绝]
+    I --> J[版本归属业务约束检查]
+    J --> K[业务变更历史与采纳结果同事务提交]
+```
+
+### 10.1 模型与凭据
+
+新增 `0003_m3`：AIConfig（账号独立配置）、AITask（任务/非敏感配置快照）、AITaskInput（固定输入与真实外键）、AISuggestion（不可变候选与最终采纳结果）、AISuggestionEvent（处理事件）。输入引用记录修订或研究内容修订，来源必须属于该记录修订。任务不复制 Key，正式记录/关系继续通过既有业务服务写入。
+
+```mermaid
+erDiagram
+    USER ||--o| AI_CONFIG : configures
+    USER ||--o{ AI_TASK : requests
+    AI_TASK ||--o{ AI_TASK_INPUT : fixes
+    AI_TASK ||--o{ AI_SUGGESTION : generates
+    RECORD_REVISION o|--o{ AI_TASK_INPUT : record_basis
+    M2_REVISION o|--o{ AI_TASK_INPUT : research_basis
+    SOURCE_VERSION o|--o{ AI_TASK_INPUT : source_basis
+    AI_SUGGESTION ||--o{ AI_SUGGESTION_EVENT : decisions
+    RECORD_REVISION o|--o{ AI_SUGGESTION : accepted_record_result
+    M2_REVISION o|--o{ AI_SUGGESTION : accepted_relation_result
+```
+
+AITaskInput 的记录与研究对象引用互斥，并分别引用真实对象及其修订。配置版本是任务执行前的校验条件；任务保留地址、模型和版本快照，不依赖配置仍然存在，也不保存密钥副本。
+
+API Key 使用 cryptography Fernet 加密落库。主密钥默认 `data/ai-master.key`，可通过 `EDUTOY_AI_KEY_PATH` 配置，相对路径从仓库根目录解析；首次需要时生成，POSIX 0600。已有密文但文件缺失时禁止自动替换，AI 暂不可用，手动功能继续。数据库备份不包含主密钥，迁移电脑时需分别恢复。Key 不进入响应、浏览器持久存储、日志、提示词和任务快照。修改请求地址必须重新输入 Key。
+
+### 10.2 任务与事务
+
+任务状态 queued/running/succeeded/failed/cancelled；建议状态 pending/accepted/edited_accepted/rejected。后端生命周期运行执行器，SQLite 持久排队；全局最多 2 个运行，每账号 1 个运行、5 个排队。连接测试同样是任务，仅发送固定文本。连接超时 10 秒，总时限 120 秒，响应最多 1 MiB，无自动重试。启动将中断的 running 标为 failed，queued 重新校验后继续；取消通过状态条件防止迟到响应覆盖。
+
+创建任务先提交；执行器短事务读取/认领，关闭会话后调用模型，再短事务保存候选。任何外部等待不得持有 SQLite 事务。配置版本改变后排队任务失败，不静默替换配置；清除配置取消未完成任务。创建/重试使用请求 UUID 幂等；采纳与业务历史原子提交，并以建议唯一结果防重复。
+
+### 10.3 选择、输出与复核
+
+单次最多 32,000 Unicode 字符，不截断；整理一条记录，关联任务 2–20 对象且至少一条记录，最多 10 条建议。只发送勾选字段/来源，不抓网页、不扫描其他对象。材料编号由后端分配，引用返回编号/原文/出现序号，后端定位并校验；研究对象只能作端点，证据来自固定记录/来源版本。输出 JSON 经过 Pydantic 和引用校验，失败不创建部分候选；空关系列表是合法结果。
+
+整理只建议标题、类型、六个结构字段；缺失信息留空，未表达的个人判断不得补写。采纳仅合并用户勾选字段，不改原始正文、来源、项目或状态。非空结构字段必须有片段引用。关系建议沿用八种类型与现有约束，候选不进入图谱。用户编辑和原始候选分别保留。
+
+输入更新时 pending 建议提示待复核；保留旧依据须提交用户确认的当前版本映射，采纳事务中再次核对。删除输入时材料和依赖候选隐藏，恢复后可读；归档内容只读。已采纳正式内容和采纳历史保留。错误、冲突、会话过期保留前端输入。
+
+### 10.4 API 与验证
+
+`/api/v1/ai`：config GET/PUT/DELETE、config/test POST、preview POST、tasks GET/POST、tasks/{id} GET、cancel/retry POST、suggestions GET、suggestions/{id} GET、accept/reject POST、suggestions/reject-batch POST。沿用账号/CSRF/Origin、统一错误、分页及 OpenAPI 类型生成；模型 401 作为任务错误，不触发应用退出。
+
+前端账号区模型设置；记录详情 AI 整理、地图 AI 建议关联、科研记录 AI 收件箱。预览显示实际发送内容、地址和模型；字段对照选择、逐条采纳与批量拒绝。任务每 2 秒轮询，终态停止。
+
+测试使用独立 SQLite/主密钥与本地模拟 HTTP 服务。35 项后端与 14 项浏览器测试为 M2 回归基线，新增密钥、网络、任务生命周期、引用、复核、采纳原子性与移动端覆盖。真实兼容接口验收另行记录，未配置真实凭据时不得将模拟测试等同于真实验收。
+M3 实际模块：`models_ai.py` / `schemas_ai.py` 定义存储与契约；`ai_credentials.py` 管理加密与配置；`ai_data.py` 定位材料、校验引用并投影删除/更新状态；`ai_prompts.py` 管理 m3.v1 提示词；`ai_worker.py` 执行受限 HTTP 调用；`ai_commands.py` 处理事务与采纳；`api_ai.py` 暴露接口。前端模型设置、材料选择、收件箱分别延迟加载，共用生成的 API 类型。
+
+采纳产生的 RecordRevision/Revision 使用 `ai_accept` 操作名，在同一首次快照中记录 `ai_suggestion_id`；历史页可回到建议。模型调用只含选定材料，当前材料对照仅返回当前用户的界面，不加入外发提示。错误状态和取消通过数据库任务状态检查保护，建议全部校验成功后才一起保存。配置清除保留递增版本，避免旧排队任务错误地使用重新创建的配置。
