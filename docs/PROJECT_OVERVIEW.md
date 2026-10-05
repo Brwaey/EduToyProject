@@ -2,7 +2,7 @@
 
 版本：v0.6 · 更新日期：2026-10-04 · 状态：M5-A 功能实现完成，待集中验证；M1–M4 回归、真实模型与课程交付由 M5-B 统一开展
 
-[返回 README](../README.md) · [功能全景与操作指南](FEATURE_GUIDE.md) · [全局架构与数据流](ARCHITECTURE.md) · [查看开发进度](DEVELOPMENT_PROGRESS.md)
+[返回 README](../README.md) · [问题定义与产品描述](requirements/problem_definition.md) · [功能全景与操作指南](FEATURE_GUIDE.md) · [全局架构与数据流](ARCHITECTURE.md) · [查看开发进度](DEVELOPMENT_PROGRESS.md)
 
 本文档定义研迹的产品目标、功能范围与实现约定。开发任务的完成情况统一记录在开发进度文档中；本文档中的功能描述不代表功能已经上线。
 
