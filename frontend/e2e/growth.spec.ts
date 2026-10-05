@@ -67,12 +67,17 @@ test("贡献、标签实例、理解变化与显式后续行动", async ({ page 
   ).toBeVisible();
   await page.getByRole("button", { name: "能力档案", exact: true }).click();
   await page.getByRole("button", { name: "实验设计", exact: true }).click();
-  await page.getByRole("button", { name: "记录能力实例", exact: true }).click();
+  await page
+    .locator(".page-header")
+    .getByRole("button", { name: "记录能力实例", exact: true })
+    .click();
   await dialog
     .getByLabel("一句话主题", { exact: true })
     .fill("在帮助下设计对照");
   await dialog.getByRole("checkbox", { name: "实验设计", exact: true }).check();
-  await dialog.getByLabel("完成方式", { exact: true }).selectOption("assisted");
+  await dialog
+    .getByRole("combobox", { name: "完成方式", exact: true })
+    .selectOption("assisted");
   await dialog
     .getByLabel("下一步想尝试什么（可选）", { exact: true })
     .fill("再检查随机种子");
@@ -97,7 +102,10 @@ test("贡献、标签实例、理解变化与显式后续行动", async ({ page 
     page.getByText("发起这次行动的贡献／成长", { exact: true }),
   ).toBeVisible();
   await page.goto("/growth?tab=understanding");
-  await page.getByRole("button", { name: "记录理解变化", exact: true }).click();
+  await page
+    .locator(".page-header")
+    .getByRole("button", { name: "记录理解变化", exact: true })
+    .click();
   await dialog.getByLabel("一句话主题", { exact: true }).fill("如何解释未提升");
   await dialog
     .getByLabel("之前如何理解（必填）", { exact: true })
@@ -166,9 +174,9 @@ test("AI 贡献核对、失败保留输入及人工确认", async ({ page }, inf
   );
   await accept.click();
   await expect(page.getByRole("alert")).toContainText("材料再次变化");
-  await expect(page.getByLabel("我的具体参与", { exact: true })).toHaveValue(
-    "我比较了设置并作出选择",
-  );
+  await expect(
+    page.getByRole("textbox", { name: "我的具体参与", exact: true }),
+  ).toHaveValue("我比较了设置并作出选择");
   await page.unroute("**/api/v1/ai/suggestions/*/accept");
   await accept.click();
   await page.getByRole("link", { name: "查看正式贡献", exact: true }).click();

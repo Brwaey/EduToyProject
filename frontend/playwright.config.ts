@@ -5,6 +5,13 @@ import { join } from "node:path";
 
 // A new private directory per test invocation; never use the everyday database.
 const database = join(mkdtempSync(join(tmpdir(), "yanji-e2e-")), "e2e.sqlite3");
+const backendPython = join(
+  "..",
+  "backend",
+  ".venv",
+  process.platform === "win32" ? "Scripts" : "bin",
+  process.platform === "win32" ? "python.exe" : "python",
+);
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -34,13 +41,12 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command:
-        "../backend/.venv/bin/python ../backend/tests/mock_model_server.py --port 8099",
+      command: `"${backendPython}" "${join("..", "backend", "tests", "mock_model_server.py")}" --port 8099`,
       url: "http://127.0.0.1:8099",
       reuseExistingServer: false,
     },
     {
-      command: "../backend/.venv/bin/python ../backend/run.py",
+      command: `"${backendPython}" "${join("..", "backend", "run.py")}"`,
       url: "http://127.0.0.1:8001/api/v1/health/ready",
       reuseExistingServer: false,
       env: {

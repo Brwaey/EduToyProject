@@ -46,8 +46,8 @@ def test_m4_upgrade_preserves_inputs_suggestions_events_and_growth(tmp_path):
         command.upgrade(cfg, "0004_m4")
         metadata = MetaData()
 
-        def insert(name, **data):
-            conn.execute(Table(name, metadata, autoload_with=conn).insert().values(**data))
+        def insert(table_name, **data):
+            conn.execute(Table(table_name, metadata, autoload_with=conn).insert().values(**data))
 
         insert(
             "users",

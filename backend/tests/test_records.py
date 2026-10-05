@@ -346,6 +346,7 @@ def test_idempotent_create_and_import(auth):
         ("bom.md", b"\xef\xbb\xbf# title\ntext", 201),
         ("notes.txt", "中文文本".encode(), 201),
     ],
+    ids=["empty", "oversized", "binary", "pdf", "null-byte", "bom", "unicode"],
 )
 def test_import_validation(auth, filename, content, status):
     response = auth.post(

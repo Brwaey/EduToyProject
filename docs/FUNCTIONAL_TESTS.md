@@ -522,7 +522,7 @@ M4 自动化只覆盖代表性路径；例如真实模型对“本人参与”�
 
 ### 11.2 后续执行命令
 
-以下不是本次执行日志；仅供集中测试使用。先完成 README 的依赖安装和 `npx playwright install chromium`。自动化端口空闲时执行：
+以下命令可用于后续复测；本次 Windows 自动化回归记录见 [RUN-WIN-20261005-01](#run-win-20261005-01)。自动化端口空闲时执行：
 
 ```bash
 # backend/ 目录
@@ -538,6 +538,23 @@ npm run build
 npm run test:e2e
 ```
 
+Windows PowerShell 可使用以下命令：
+
+```powershell
+# backend/ 目录
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\ruff.exe check app scripts tests migrations run.py
+.\.venv\Scripts\ruff.exe format --check app scripts tests migrations run.py
+
+# frontend/ 目录
+npm run typecheck
+npm run format:check
+npm run build
+npm run test:e2e
+```
+
+Playwright 配置会按操作系统选择虚拟环境中的 Python。若 Chromium 安装在自定义缓存目录，运行 E2E 前将 `PLAYWRIGHT_BROWSERS_PATH` 设为该目录；默认安装位置无需设置。
+
 生成 API 前后比较 `backend/openapi.json` 与 `frontend/src/api.generated.ts`，不能把“命令退出成功”直接当作类型已保持同步。格式、类型和构建是工程检查，单独记结果，不能代替用户流程测试。浏览器当前只配置 Chromium 的桌面/手机尺寸；不能声称已经覆盖 Safari、Firefox 或真实手机设备。
 
 ### 11.3 批次总表
@@ -547,6 +564,27 @@ npm run test:e2e
 | HIST-M3-20261003 | 功能提交 d23c6c7，记录提交 f9040e3 | 历史：后端 pytest 57 项；Playwright 18 项；类型/构建/格式/接口生成检查 | 按开发进度已通过；模型为本地模拟服务；不回填本文逐条用例状态 |
 | DEV-M5A-20261004 | M5-A 功能实现，具体提交见开发进度 | 仅格式/类型/构建/契约/DDL 静态检查 | 未运行 pytest/Playwright、真实模型或迁移实测；所有功能用例未执行 |
 | DOC-20261003 | f9040e3 上新增本文档 | 仅文档核对，未运行 pytest/Playwright/模型调用 | 本文全部用例尚未逐项执行；测试按用户安排留待后续集中进行 |
+| RUN-WIN-20261005-01 | `84fa309` 基线加本次修复 | 后端 pytest 86 项；Playwright 桌面/手机 26 项；Ruff、类型、构建与依赖检查 | 自动化通过；完整 Prettier 检查仍有 42 个未改文件未通过；真实模型和手工验收未执行 |
+
+### RUN-WIN-20261005-01
+
+- 执行者 / 日期：Codex / 2026-10-05
+- Git 基线 / 迁移 head：`84fa309` / 测试临时数据库自动迁移至当前 head；变更未修改迁移文件
+- 环境：Windows；Python 3.12.7；Node.js 24.12.0；Playwright Chromium 153；后端使用临时 SQLite 与测试用密钥
+- 范围：后端全量 pytest；Playwright 全量桌面与手机项目；Python Ruff；前端 TypeScript、生产构建；依赖一致性
+- 前置条件及排除项：E2E 使用本地模拟模型和临时数据库；未配置或调用真实模型，未执行手工验收
+- 工程检查结果：`pip check`、Ruff check/format、前端 typecheck/build 通过；本次修改的两个前端测试文件通过 Prettier。全仓 `format:check` 仍标记 42 个未修改文件
+- 汇总：pytest 86/86 通过（1 条 Starlette 弃用警告）；Playwright 26/26 通过；本批次 E2E 未跳过用例
+
+| 用例 / 变体 | 功能状态 | 执行状态 | 实际结果 | 脱敏证据 | 缺陷 ID | 复测批次 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `backend/tests` 全量 pytest | 已实现 | 已执行 | 86 passed；1 warning | 本地终端摘要 | — | RUN-WIN-20261005-01 |
+| Playwright 全量桌面/手机 | 已实现 | 已执行 | 26 passed；0 failed | 本地 Playwright 报告 | — | RUN-WIN-20261005-01 |
+| 前端 TypeScript 与 Vite 构建 | 已实现 | 已执行 | typecheck/build 通过 | 命令摘要 | — | RUN-WIN-20261005-01 |
+| 全仓 Prettier | 已实现 | 已执行 | 42 个未改文件仍未通过；本次改动文件单独检查通过 | 命令摘要 | — | — |
+
+- 修复记录：Windows 依赖加入 `tzdata`；大文件 pytest 用例改为短 ID；两条迁移测试的表名辅助参数改名；Playwright 后端启动路径适配 Windows；成长 E2E 限定按钮范围并按可访问角色定位控件。
+- 剩余问题、影响和下一步：全仓 Prettier 对 42 个未改文件报格式差异；不影响本次测试通过。真实模型、手工流程和全面验收仍待执行。
 
 后续每次测试在此追加 RUN 批次，先写实际范围，再在“用例结果”中填写明细。用例多时可将明细保存到 `docs/test-runs/<批次>.md` 并在此链接；目前不创建空报告或伪造结果。只提交脱敏文字，原始截图/trace 保留本地或团队确定的受限位置。
 

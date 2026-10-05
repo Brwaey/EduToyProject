@@ -454,8 +454,8 @@ def test_m3_upgrade_preserves_existing_ai_rows_and_foreign_keys(tmp_path):
         command.upgrade(cfg, "0003_m3")
         meta = MetaData()
 
-        def insert(name, **values):
-            conn.execute(Table(name, meta, autoload_with=conn).insert().values(**values))
+        def insert(table_name, **values):
+            conn.execute(Table(table_name, meta, autoload_with=conn).insert().values(**values))
 
         insert(
             "users",
