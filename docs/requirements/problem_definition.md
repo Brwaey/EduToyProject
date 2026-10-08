@@ -2,7 +2,7 @@
 
 版本：v1.0 · 更新日期：2026-10-05 · 产品名称：研迹（暂定）
 
-[返回 README](../../README.md) · [项目说明](../PROJECT_OVERVIEW.md) · [功能指南](../FEATURE_GUIDE.md) · [架构文档](../ARCHITECTURE.md) · [开发进度](../DEVELOPMENT_PROGRESS.md)
+[返回 README](../../README.md) · [功能规格](functional_specification.md) · [项目说明](../PROJECT_OVERVIEW.md) · [功能指南](../FEATURE_GUIDE.md) · [架构文档](../ARCHITECTURE.md) · [开发进度](../DEVELOPMENT_PROGRESS.md)
 
 本文依据团队已经确定的产品方向、项目说明和当前功能范围整理。下文描述的是**待通过用户使用与验收持续验证的问题假设和产品目标**，不表示已通过用户研究证明产品能提升学习成效或缓解科研压力。
 

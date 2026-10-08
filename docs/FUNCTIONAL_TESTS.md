@@ -2,7 +2,7 @@
 
 版本：v1.2.1 · 更新日期：2026-10-04
 
-[返回 README](../README.md) · [功能全景与操作指南](FEATURE_GUIDE.md) · [项目说明](PROJECT_OVERVIEW.md) · [架构与数据流](ARCHITECTURE.md) · [开发进度](DEVELOPMENT_PROGRESS.md)
+[返回 README](../README.md) · [功能规格](requirements/functional_specification.md) · [功能全景与操作指南](FEATURE_GUIDE.md) · [项目说明](PROJECT_OVERVIEW.md) · [架构与数据流](ARCHITECTURE.md) · [开发进度](DEVELOPMENT_PROGRESS.md)
 
 ## 1. 用途与当前执行安排
 

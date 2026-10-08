@@ -14,6 +14,7 @@
 | --- | --- |
 | [功能全景与操作指南](docs/FEATURE_GUIDE.md) | **组员上手先读**：按实际页面讲解全部功能、操作与限制，附完整体验路线和对应测试用例 |
 | [问题定义与产品描述](docs/requirements/problem_definition.md) | 5W1H 问题定义、目标用户、产品能力、使用边界与验证假设 |
+| [软件系统功能规格说明书](docs/requirements/functional_specification.md) | 系统角色、细化功能树、AI 工作流、领域模型与验收追溯 |
 | [项目说明](docs/PROJECT_OVERVIEW.md) | 产品定位、全部功能规格、当前与后续范围、课程交付 |
 | [全局架构与数据流](docs/ARCHITECTURE.md) | 模块边界、对象关系、API、归属、事务、版本和未来模块约定 |
 | [开发进度记录](docs/DEVELOPMENT_PROGRESS.md) | 里程碑、任务、实际验证结果、决策变化与待办 |

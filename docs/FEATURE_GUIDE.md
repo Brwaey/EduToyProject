@@ -2,7 +2,7 @@
 
 版本：v1.0 · 更新日期：2026-10-04 · 对应 M1–M5-A 首版功能
 
-[返回 README](../README.md) · [项目说明](PROJECT_OVERVIEW.md) · [功能测试文档](FUNCTIONAL_TESTS.md) · [开发进度](DEVELOPMENT_PROGRESS.md)
+[返回 README](../README.md) · [功能规格](requirements/functional_specification.md) · [项目说明](PROJECT_OVERVIEW.md) · [功能测试文档](FUNCTIONAL_TESTS.md) · [开发进度](DEVELOPMENT_PROGRESS.md)
 
 本文面向准备了解产品、参与测试和课程演示的组员。按实际页面介绍功能用途、入口、操作、保存结果和限制；不需要先读懂后端接口或数据库设计。
 
